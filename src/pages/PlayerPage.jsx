@@ -3,42 +3,42 @@ import { useParams, Link } from "react-router-dom";
 import "./PlayerPage.css";
 
 const RANK_ORDER = [
-  "Copper V",
-  "Copper IV",
-  "Copper III",
-  "Copper II",
-  "Copper I",
-  "Bronze V",
-  "Bronze IV",
-  "Bronze III",
-  "Bronze II",
-  "Bronze I",
-  "Silver V",
-  "Silver IV",
-  "Silver III",
-  "Silver II",
-  "Silver I",
-  "Gold V",
-  "Gold IV",
-  "Gold III",
-  "Gold II",
-  "Gold I",
-  "Platinum V",
-  "Platinum IV",
-  "Platinum III",
-  "Platinum II",
-  "Platinum I",
-  "Emerald V",
-  "Emerald IV",
-  "Emerald III",
-  "Emerald II",
-  "Emerald I",
-  "Diamond V",
-  "Diamond IV",
-  "Diamond III",
-  "Diamond II",
-  "Diamond I",
-  "Champion",
+  "Cobre V",
+  "Cobre IV",
+  "Cobre III",
+  "Cobre II",
+  "Cobre I",
+  "Bronce V",
+  "Bronce IV",
+  "Bronce III",
+  "Bronce II",
+  "Bronce I",
+  "Plata V",
+  "Plata IV",
+  "Plata III",
+  "Plata II",
+  "Plata I",
+  "Oro V",
+  "Oro IV",
+  "Oro III",
+  "Oro II",
+  "Oro I",
+  "Platino V",
+  "Platino IV",
+  "Platino III",
+  "Platino II",
+  "Platino I",
+  "Esmeralda V",
+  "Esmeralda IV",
+  "Esmeralda III",
+  "Esmeralda II",
+  "Esmeralda I",
+  "Diamante V",
+  "Diamante IV",
+  "Diamante III",
+  "Diamante II",
+  "Diamante I",
+  "Campeón",
 ];
 
 function rankScore(rank) {
@@ -49,14 +49,14 @@ function rankScore(rank) {
 function rankColor(rank) {
   if (!rank) return "#999";
 
-  if (rank.startsWith("Copper")) return "#8f0200"; // Rojo
-  if (rank.startsWith("Bronze")) return "#b57227"; // Bronce
-  if (rank.startsWith("Silver")) return "#a5a6a3"; // Plata
-  if (rank.startsWith("Gold")) return "#e8c612"; // Oro
-  if (rank.startsWith("Platinum")) return "#45cdc1"; // Azul claro
-  if (rank.startsWith("Emerald")) return "#08ce7d"; // Verde
-  if (rank.startsWith("Diamond")) return "#b495f9"; // Morado
-  if (rank === "Champion") return "#df1880"; // Rosa
+  if (rank.startsWith("Cobre")) return "#8f0200"; // Rojo
+  if (rank.startsWith("Bronce")) return "#b57227"; // Bronce
+  if (rank.startsWith("Plata")) return "#a5a6a3"; // Plata
+  if (rank.startsWith("Oro")) return "#e8c612"; // Oro
+  if (rank.startsWith("Platino")) return "#45cdc1"; // Azul claro
+  if (rank.startsWith("Esmeralda")) return "#08ce7d"; // Verde
+  if (rank.startsWith("Diamante")) return "#b495f9"; // Morado
+  if (rank === "Campeón") return "#df1880"; // Rosa
 
   return "#999";
 }

@@ -77,7 +77,7 @@ app.get("/api/player/:platform/:name", (req, res) => {
       // 👇 NUEVO: stats para Ranked / Unranked + histórico de temporadas
       stats: {
         ranked: {
-          currentRank: "Gold II",
+          currentRank: "Oro II",
           mmr: 2784,
           kd: 1.12,
           winRate: 54.3,
@@ -93,11 +93,11 @@ app.get("/api/player/:platform/:name", (req, res) => {
           losses: 264,
         },
         rankedSeasons: [
-          { season: "Y9S4", rank: "Emerald III", mmr: 3342 },
-          { season: "Y9S3", rank: "Platinum II", mmr: 3610 },
-          { season: "Y9S2", rank: "Diamond V", mmr: 4120 }, // <- peak
-          { season: "Y9S1", rank: "Gold I", mmr: 2990 },
-          { season: "Y8S4", rank: "Platinum III", mmr: 3401 },
+          { season: "Y9S4", rank: "Esmeralda III", mmr: 3342 },
+          { season: "Y9S3", rank: "Platino II", mmr: 3610 },
+          { season: "Y9S2", rank: "Diamante V", mmr: 4120 }, // <- peak
+          { season: "Y9S1", rank: "Oro I", mmr: 2990 },
+          { season: "Y8S4", rank: "Platino III", mmr: 3401 },
         ],
       },
 
