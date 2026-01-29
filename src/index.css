@@ -121,6 +121,11 @@ button:focus-visible {
   box-sizing: border-box;
 }
 
+::selection {
+  background-color: #08ce7d;
+  color: #000000;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
