@@ -7,6 +7,7 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer__inner">
         <div className="footer__left">
+          <img className="footer__img" src="/favicon/GameTracker.png" alt="GameTracker Logo"></img>
           <span className="footer__brand">GameTracker</span>
           <span className="footer__sep">•</span>
           <span className="footer__copy">© {year}</span>
