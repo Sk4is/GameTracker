@@ -3,19 +3,62 @@ import { useParams, Link } from "react-router-dom";
 import "./PlayerPage.css";
 
 const RANK_ORDER = [
-  "Copper V","Copper IV","Copper III","Copper II","Copper I",
-  "Bronze V","Bronze IV","Bronze III","Bronze II","Bronze I",
-  "Silver V","Silver IV","Silver III","Silver II","Silver I",
-  "Gold V","Gold IV","Gold III","Gold II","Gold I",
-  "Platinum V","Platinum IV","Platinum III","Platinum II","Platinum I",
-  "Emerald V","Emerald IV","Emerald III","Emerald II","Emerald I",
-  "Diamond V","Diamond IV","Diamond III","Diamond II","Diamond I",
+  "Copper V",
+  "Copper IV",
+  "Copper III",
+  "Copper II",
+  "Copper I",
+  "Bronze V",
+  "Bronze IV",
+  "Bronze III",
+  "Bronze II",
+  "Bronze I",
+  "Silver V",
+  "Silver IV",
+  "Silver III",
+  "Silver II",
+  "Silver I",
+  "Gold V",
+  "Gold IV",
+  "Gold III",
+  "Gold II",
+  "Gold I",
+  "Platinum V",
+  "Platinum IV",
+  "Platinum III",
+  "Platinum II",
+  "Platinum I",
+  "Emerald V",
+  "Emerald IV",
+  "Emerald III",
+  "Emerald II",
+  "Emerald I",
+  "Diamond V",
+  "Diamond IV",
+  "Diamond III",
+  "Diamond II",
+  "Diamond I",
   "Champion",
 ];
 
 function rankScore(rank) {
   const i = RANK_ORDER.indexOf(rank);
   return i === -1 ? -1 : i;
+}
+
+function rankColor(rank) {
+  if (!rank) return "#999";
+
+  if (rank.startsWith("Copper")) return "#b33a3a"; // Rojo
+  if (rank.startsWith("Bronze")) return "#b87333"; // Bronce
+  if (rank.startsWith("Silver")) return "#c0c0c0"; // Plata
+  if (rank.startsWith("Gold")) return "#f5c76a"; // Oro
+  if (rank.startsWith("Platinum")) return "#7fbfff"; // Azul claro
+  if (rank.startsWith("Emerald")) return "#2ecc71"; // Verde
+  if (rank.startsWith("Diamond")) return "#9b59b6"; // Morado
+  if (rank === "Champion") return "#ff5fa2"; // Rosa
+
+  return "#999";
 }
 
 function StatCard({ label, value }) {
@@ -32,7 +75,11 @@ export default function PlayerPage() {
   const decodedName = decodeURIComponent(name);
 
   const [tab, setTab] = useState("ranked"); // ranked | unranked
-  const [state, setState] = useState({ loading: true, error: "", payload: null });
+  const [state, setState] = useState({
+    loading: true,
+    error: "",
+    payload: null,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -40,22 +87,33 @@ export default function PlayerPage() {
     async function load() {
       setState({ loading: true, error: "", payload: null });
       try {
-        const r = await fetch(`/api/player/${platform}/${encodeURIComponent(decodedName)}`);
+        const r = await fetch(
+          `/api/player/${platform}/${encodeURIComponent(decodedName)}`
+        );
         const json = await r.json();
         if (!r.ok) throw new Error(json?.error || `HTTP ${r.status}`);
         if (!cancelled) setState({ loading: false, error: "", payload: json });
       } catch (e) {
-        if (!cancelled) setState({ loading: false, error: String(e.message || e), payload: null });
+        if (!cancelled)
+          setState({
+            loading: false,
+            error: String(e.message || e),
+            payload: null,
+          });
       }
     }
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [platform, decodedName]);
 
   const computed = useMemo(() => {
     const d = state.payload?.data;
-    const seasons = Array.isArray(d?.stats?.rankedSeasons) ? d.stats.rankedSeasons : [];
+    const seasons = Array.isArray(d?.stats?.rankedSeasons)
+      ? d.stats.rankedSeasons
+      : [];
 
     const peak = seasons.reduce((best, s) => {
       if (!best) return s;
@@ -76,7 +134,9 @@ export default function PlayerPage() {
   if (state.error) {
     return (
       <div className="app-container">
-        <Link to="/" className="backLink">← Volver</Link>
+        <Link to="/" className="backLink">
+          ← Volver
+        </Link>
         <div className="errorBox">Error: {state.error}</div>
       </div>
     );
@@ -90,9 +150,13 @@ export default function PlayerPage() {
   const seasons = computed.seasons;
   const peak = computed.peak;
 
+  const peakClr = rankColor(peak?.rank);
+
   return (
     <div className="app-container">
-      <Link to="/" className="backLink">← Volver</Link>
+      <Link to="/" className="backLink">
+        ← Volver
+      </Link>
 
       {/* Banner */}
       <div
@@ -103,7 +167,9 @@ export default function PlayerPage() {
         <div className="banner__content">
           <div className="banner__meta">
             Plataforma: <b>{platform}</b>
-            {state.payload?.mock ? <span className="banner__mock">(mock)</span> : null}
+            {state.payload?.mock ? (
+              <span className="banner__mock">(mock)</span>
+            ) : null}
           </div>
 
           <div className="banner__name">{d.username}</div>
@@ -135,12 +201,21 @@ export default function PlayerPage() {
       {tab === "ranked" ? (
         <>
           {/* Peak destacado */}
-          <div className="peak">
+          <div
+            className="peak"
+            style={{
+              borderColor: peakClr,
+              boxShadow: `0 0 0 1px ${peakClr}, 0 0 24px ${peakClr}55`,
+            }}
+          >
             <div className="peak__label">Rango máximo histórico (Peak)</div>
+
+            {/* Texto BLANCO, solo caja coloreada */}
             <div className="peak__value">
               {peak?.rank ?? "-"}{" "}
               <span className="peak__meta">({peak?.season ?? "-"})</span>
             </div>
+
             <div className="peak__meta2">MMR: {peak?.mmr ?? "-"}</div>
           </div>
 
@@ -148,7 +223,10 @@ export default function PlayerPage() {
             <StatCard label="Rango actual" value={ranked?.currentRank ?? "-"} />
             <StatCard label="MMR" value={ranked?.mmr ?? "-"} />
             <StatCard label="K/D" value={ranked?.kd ?? "-"} />
-            <StatCard label="Winrate" value={ranked ? `${ranked.winRate}%` : "-"} />
+            <StatCard
+              label="Winrate"
+              value={ranked ? `${ranked.winRate}%` : "-"}
+            />
           </div>
 
           {/* Temporadas + highlight peak */}
@@ -156,9 +234,24 @@ export default function PlayerPage() {
             <div className="seasonCard__title">Historial de temporadas</div>
             <div className="seasonList">
               {seasons.map((s) => {
-                const isPeak = peak && s.season === peak.season && s.rank === peak.rank;
+                const isPeak =
+                  peak && s.season === peak.season && s.rank === peak.rank;
+
+                const rowClr = rankColor(s.rank);
+
                 return (
-                  <div key={s.season} className={`seasonRow ${isPeak ? "is-peak" : ""}`}>
+                  <div
+                    key={s.season}
+                    className={`seasonRow ${isPeak ? "is-peak" : ""}`}
+                    style={
+                      isPeak
+                        ? {
+                            borderColor: rowClr,
+                            boxShadow: `0 0 0 1px ${rowClr}, 0 0 14px ${rowClr}44`,
+                          }
+                        : undefined
+                    }
+                  >
                     <div className="seasonRow__season">{s.season}</div>
                     <div className="seasonRow__rank">{s.rank}</div>
                     <div className="seasonRow__mmr">{s.mmr}</div>
@@ -178,7 +271,10 @@ export default function PlayerPage() {
           </div>
 
           <div className="statsGrid statsGrid--2">
-            <StatCard label="Winrate" value={unranked ? `${unranked.winRate}%` : "-"} />
+            <StatCard
+              label="Winrate"
+              value={unranked ? `${unranked.winRate}%` : "-"}
+            />
             <StatCard label="Modo" value="Unranked" />
           </div>
         </>
@@ -212,7 +308,8 @@ export default function PlayerPage() {
       </div>
 
       <div className="tip">
-        Tip: cuando Tracker esté aprobado, este mock se reemplaza por datos reales sin cambiar la UI.
+        Tip: cuando Tracker esté aprobado, este mock se reemplaza por datos
+        reales sin cambiar la UI.
       </div>
     </div>
   );
