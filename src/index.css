@@ -1,16 +1,82 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --max-width: 1100px;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+}
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+body {
+  margin: 0;
+  background: #0b0b0b;
+  color: white;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+
+  /* Grain realista, más efectivo contra banding */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+
+  opacity: 0.09;          /* súbelo un pelín */
+  mix-blend-mode: normal; /* QUITA overlay */
+}
+
+.platform-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* Fondo estable (NO se anima) */
+  background-color: rgba(255, 255, 255, 0.06);
+
+  /* Flecha custom */
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.7) 50%),
+    linear-gradient(135deg, rgba(255,255,255,0.7) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+
+  color: white;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 14px;
+
+  padding: 12px 44px 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.platform-select:hover {
+  border-color: rgba(255,255,255,0.3);
+}
+
+.platform-select:focus {
+  border-color: rgba(245,199,106,0.6);
+  box-shadow: 0 0 0 4px rgba(245,199,106,0.15);
+}
+
+.platform-select option {
+  background: #0f0f0f;
+  color: white;
+}
+
+.app-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 32px 20px 64px;
 }
 
 a {
@@ -20,14 +86,6 @@ a {
 }
 a:hover {
   color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
 }
 
 h1 {
