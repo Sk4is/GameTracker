@@ -49,14 +49,14 @@ function rankScore(rank) {
 function rankColor(rank) {
   if (!rank) return "#999";
 
-  if (rank.startsWith("Copper")) return "#b33a3a"; // Rojo
-  if (rank.startsWith("Bronze")) return "#b87333"; // Bronce
-  if (rank.startsWith("Silver")) return "#c0c0c0"; // Plata
-  if (rank.startsWith("Gold")) return "#f5c76a"; // Oro
-  if (rank.startsWith("Platinum")) return "#7fbfff"; // Azul claro
-  if (rank.startsWith("Emerald")) return "#2ecc71"; // Verde
-  if (rank.startsWith("Diamond")) return "#9b59b6"; // Morado
-  if (rank === "Champion") return "#ff5fa2"; // Rosa
+  if (rank.startsWith("Copper")) return "#8f0200"; // Rojo
+  if (rank.startsWith("Bronze")) return "#b57227"; // Bronce
+  if (rank.startsWith("Silver")) return "#a5a6a3"; // Plata
+  if (rank.startsWith("Gold")) return "#e8c612"; // Oro
+  if (rank.startsWith("Platinum")) return "#45cdc1"; // Azul claro
+  if (rank.startsWith("Emerald")) return "#08ce7d"; // Verde
+  if (rank.startsWith("Diamond")) return "#b495f9"; // Morado
+  if (rank === "Champion") return "#df1880"; // Rosa
 
   return "#999";
 }
