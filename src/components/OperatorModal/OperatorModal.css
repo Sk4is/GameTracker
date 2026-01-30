@@ -18,6 +18,7 @@
   box-shadow: 0 16px 60px rgba(0,0,0,0.45);
   position: relative;
   overflow:hidden;
+  overflow: auto; /* scroll interno */
 }
 
 .opModalClose{
@@ -119,8 +120,10 @@
     flex-direction:column;
   }
   .opModalImg{
+    object-fit: cover;
+    object-position: 50% 25%;
     width: 100%;
-    height: 220px;
+    height: 200px;
   }
   .opModalStats{
     grid-template-columns: 1fr;
