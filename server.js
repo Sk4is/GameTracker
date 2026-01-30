@@ -798,4 +798,9 @@ app.get("/api/operators/:slug", (req, res) => {
   res.json({ mock: true, data: op });
 });
 
-app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+export default app;
+
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+}
