@@ -189,7 +189,6 @@ export default function OperatorsPage() {
 
         <h1>Roles Defensores</h1>
 
-        {/* DEFENSORES */}
         <div className="sectionDividerLeft" />
         <h2>Roamer</h2>
         <p>
@@ -241,7 +240,6 @@ export default function OperatorsPage() {
         </ul>
 
       <div className="sectionDivider" />
-        {/* ATACANTES */}
         <h1>Roles de Atacantes</h1>
 
         <div className="sectionDividerLeft" />
@@ -330,7 +328,6 @@ export default function OperatorsPage() {
         </ul>
 
       <div className="sectionDivider" />
-        {/* ROLES ESPECIALES */}
         <h1>Roles Especiales</h1>
 
         <div className="sectionDividerLeft" />
