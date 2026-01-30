@@ -250,3 +250,22 @@
   opacity: 0.7;
   font-size: 12px;
 }
+
+.opsBackBtn{
+  align-self: flex-start;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(17,24,39,0.55);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease, opacity .12s ease;
+}
+
+.opsBackBtn:hover{
+  transform: translateX(-2px);
+  background: rgba(17,24,39,0.75);
+  opacity: .95;
+}

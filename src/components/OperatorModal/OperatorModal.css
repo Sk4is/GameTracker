@@ -1,0 +1,128 @@
+.opModalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.62);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  z-index: 999;
+}
+
+.opModal{
+  width: min(880px, 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(17,24,39,0.92);
+  color:#fff;
+  box-shadow: 0 16px 60px rgba(0,0,0,0.45);
+  position: relative;
+  overflow:hidden;
+}
+
+.opModalClose{
+  position:absolute;
+  top: 10px;
+  right: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.25);
+  color:#fff;
+  cursor:pointer;
+  font-size: 16px;
+}
+
+.opModalClose:hover{
+  background: rgba(255,255,255,0.08);
+}
+
+.opModalTop{
+  display:flex;
+  gap: 14px;
+  padding: 16px;
+}
+
+.opModalImg{
+  width: 230px;
+  height: 350px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.2);
+  flex: 0 0 auto;
+}
+
+.opModalHead{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.opModalSide{
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  letter-spacing: .6px;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.22);
+}
+
+.opModalSide.attacker{
+  border-color: rgba(34,197,94,0.30);
+}
+.opModalSide.defender{
+  border-color: rgba(59,130,246,0.30);
+}
+
+.opModalName{
+  margin: 0;
+  font-size: 28px;
+}
+
+.opModalDesc{
+  margin: 0;
+  opacity: .86;
+  line-height: 1.4;
+}
+
+.opModalStats{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
+.statPill{
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  padding: 12px;
+}
+
+.statLabel{
+  font-size: 12px;
+  opacity: .75;
+  margin-bottom: 6px;
+}
+
+.statValue{
+  font-size: 18px;
+  font-weight: 900;
+}
+
+@media (max-width: 760px){
+  .opModalTop{
+    flex-direction:column;
+  }
+  .opModalImg{
+    width: 100%;
+    height: 220px;
+  }
+  .opModalStats{
+    grid-template-columns: 1fr;
+  }
+}

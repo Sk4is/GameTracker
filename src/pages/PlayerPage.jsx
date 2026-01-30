@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./PlayerPage.css";
 
 const RANK_ORDER = [
@@ -73,6 +74,7 @@ function StatCard({ label, value }) {
 export default function PlayerPage() {
   const { platform, name } = useParams();
   const decodedName = decodeURIComponent(name);
+  const navigate = useNavigate();
 
   const [tab, setTab] = useState("ranked"); // ranked | unranked
   const [state, setState] = useState({
@@ -88,7 +90,7 @@ export default function PlayerPage() {
       setState({ loading: true, error: "", payload: null });
       try {
         const r = await fetch(
-          `/api/player/${platform}/${encodeURIComponent(decodedName)}`
+          `/api/player/${platform}/${encodeURIComponent(decodedName)}`,
         );
         const json = await r.json();
         if (!r.ok) throw new Error(json?.error || `HTTP ${r.status}`);
@@ -154,14 +156,19 @@ export default function PlayerPage() {
 
   return (
     <div className="app-container">
-      <Link to="/" className="backLink">
+      <button className="opsBackBtn" onClick={() => navigate(-1)} type="button">
         ← Volver
-      </Link>
+      </button>
 
       {/* Banner */}
       <div
         className="banner"
-        style={{ backgroundImage: bg ? `url(${bg})` : "none" }}
+        style={{
+          backgroundImage: bg ? `url(${bg})` : "none",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
       >
         <div className="banner__overlay" />
         <div className="banner__content">

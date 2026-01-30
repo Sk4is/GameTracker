@@ -77,3 +77,26 @@
   opacity: 0.7;
   font-size: 12px;
 }
+
+.homeActions{
+  display:flex;
+  justify-content:center;
+  margin-top:14px;
+  margin-bottom:8px;
+}
+
+.homeBtn{
+  background:#111827;
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.12);
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:600;
+  transition: transform .12s ease, opacity .12s ease;
+}
+
+.homeBtn:hover{
+  transform: translateY(-1px);
+  opacity:.95;
+}

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../components/SearchBar/SearchBar";
-import Footer from "../components/Footer/Footer";
 import "./Home.css";
 
 export default function Home() {
@@ -64,6 +63,13 @@ export default function Home() {
         loading={false}
         platform={platform}
       />
+
+      {/* ✅ Botón a Operadores */}
+      <div className="homeActions">
+        <button className="homeBtn" onClick={() => navigate("/operators")}>
+          Ver operadores (76)
+        </button>
+      </div>
 
       {/* --- Último vídeo Ubisoft relacionado con R6 --- */}
       <div className="homeVideo">

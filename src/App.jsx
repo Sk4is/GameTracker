@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import PlayerPage from "./pages/PlayerPage";
 import Footer from "./components/Footer/Footer";
+import OperatorsPage from "./pages/OperatorsPage";
 
 export default function App() {
   return (
@@ -10,6 +11,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/player/:platform/:name" element={<PlayerPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/operators" element={<OperatorsPage />} />
       </Routes>
 
       {/* Footer GLOBAL (fuera de Routes) */}
