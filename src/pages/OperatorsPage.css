@@ -275,30 +275,6 @@
   opacity:.95;
 }
 
-.sectionDivider {
-  height: 1px;
-  margin: 48px 0;
-  background: linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.25),
-    rgba(255, 255, 255, 0)
-  );
-}
-
-.sectionDividerLeft {
-  height: 1px;
-  width: 100%;
-
-  background: linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0.35), /* fuerte izquierda */
-    rgba(255, 255, 255, 0.15) 30%,
-    rgba(255, 255, 255, 0.05) 60%,
-    rgba(255, 255, 255, 0)    100% /* se desvanece */
-  );
-}
-
 /* Laptop / tablet grande */
 @media (max-width: 1100px){
   .opsGrid{ grid-template-columns: repeat(5, minmax(0, 1fr)); }

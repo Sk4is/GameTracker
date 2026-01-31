@@ -61,7 +61,9 @@ app.get("/api/youtube/latest-r6", async (req, res) => {
     }
 
     // Sacamos entries del XML (sin librerías)
-    const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map((m) => m[1]);
+    const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(
+      (m) => m[1],
+    );
 
     const want = (title = "") => {
       const t = title.toLowerCase();
@@ -101,7 +103,8 @@ app.get("/api/youtube/latest-r6", async (req, res) => {
 
     if (!best) {
       return res.status(404).json({
-        error: "No encontré un vídeo reciente de R6 en @Ubisoft (según el feed).",
+        error:
+          "No encontré un vídeo reciente de R6 en @Ubisoft (según el feed).",
       });
     }
 
@@ -113,53 +116,459 @@ app.get("/api/youtube/latest-r6", async (req, res) => {
   }
 });
 
-// ---- TU MOCK DE PLAYER (déjalo igual) ----
-app.get("/api/player/:platform/:name", (req, res) => {
+// --- timeout para fetch ---
+async function fetchWithTimeout(url, options = {}, timeoutMs = 6500) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { ...options, signal: controller.signal });
+    return r;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+// --- json seguro ---
+async function safeJson(resp) {
+  const txt = await resp.text();
+  try {
+    return JSON.parse(txt);
+  } catch {
+    return { _raw: txt };
+  }
+}
+
+// --- rank id -> nombre (sin /api/ranks) ---
+const RANK_ORDER = [
+  "Cobre V",
+  "Cobre IV",
+  "Cobre III",
+  "Cobre II",
+  "Cobre I",
+  "Bronce V",
+  "Bronce IV",
+  "Bronce III",
+  "Bronce II",
+  "Bronce I",
+  "Plata V",
+  "Plata IV",
+  "Plata III",
+  "Plata II",
+  "Plata I",
+  "Oro V",
+  "Oro IV",
+  "Oro III",
+  "Oro II",
+  "Oro I",
+  "Platino V",
+  "Platino IV",
+  "Platino III",
+  "Platino II",
+  "Platino I",
+  "Esmeralda V",
+  "Esmeralda IV",
+  "Esmeralda III",
+  "Esmeralda II",
+  "Esmeralda I",
+  "Diamante V",
+  "Diamante IV",
+  "Diamante III",
+  "Diamante II",
+  "Diamante I",
+  "Campeón",
+];
+
+function rankNameFromId(id) {
+  const n = Number(id);
+  if (!Number.isFinite(n) || n <= 0) return "Sin rango";
+  return RANK_ORDER[n - 1] || `#${n}`;
+}
+
+app.get("/api/player/:platform/:name", async (req, res) => {
   const { platform, name } = req.params;
+  const noCache = req.query.nocache === "1";
+  const started = Date.now();
 
-  const ops = ["sledge", "ash", "jager", "thermite", "mute", "hibana", "smoke", "iq"];
-  const idx = Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % ops.length;
-  const topOperatorSlug = ops[idx];
+  // ---------- MOCK base ----------
+  const opsFallback = [
+    "sledge",
+    "ash",
+    "jager",
+    "thermite",
+    "mute",
+    "hibana",
+    "smoke",
+    "iq",
+  ];
+  const idx =
+    Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) %
+    opsFallback.length;
+  const topSlug = opsFallback[idx];
 
-  res.json({
+  const mockPayload = {
     cached: false,
     mock: true,
+    source: "mock",
+    debug: { tookMs: Date.now() - started },
     data: {
       platform,
       username: name,
       topOperator: {
-        slug: topOperatorSlug,
-        name: topOperatorSlug.charAt(0).toUpperCase() + topOperatorSlug.slice(1),
-        imageUrl: `/assets/operators/${topOperatorSlug}.jpg`,
+        slug: topSlug,
+        name: topSlug.charAt(0).toUpperCase() + topSlug.slice(1),
+        imageUrl: `/assets/operators/${topSlug}.jpg`,
       },
-      // (tu mock aquí...)
-      overview: {
-        rank: "Oro II",
-        mmr: 2784,
-        kd: 1.12,
-        winRate: 54.3,
-        matches: 312,
-        wins: 169,
-        losses: 143,
-      },
-      operators: [
-        { name: "Ash", slug: "ash", matches: 120, kd: 1.25, wins: 65 },
-        { name: "Jäger", slug: "jager", matches: 95, kd: 1.18, wins: 51 },
-        { name: "Sledge", slug: "sledge", matches: 82, kd: 1.05, wins: 43 },
-        { name: "Thermite", slug: "thermite", matches: 70, kd: 1.01, wins: 39 },
-      ],
-      // stats mock si quieres...
+      topOperators: [],
+      operators: [],
       stats: {
-        ranked: { currentRank: "Oro II", mmr: 2784, kd: 1.12, winRate: 54.3 },
-        unranked: { matches: 220, wins: 118, losses: 102, kd: 1.08, winRate: 53.6 },
-        rankedSeasons: [
-          { season: "Y9S4", rank: "Oro II", mmr: 2784 },
-          { season: "Y9S3", rank: "Oro I", mmr: 2901 },
-          { season: "Y9S2", rank: "Platino V", mmr: 3200 },
-        ],
+        ranked: {
+          currentRank: "-",
+          mmr: "-",
+          kd: "-",
+          winRate: "-",
+          matches: "-",
+          wins: "-",
+          losses: "-",
+          peakRank: "-",
+          peakMmr: "-",
+        },
+        unranked: {
+          matches: "-",
+          wins: "-",
+          losses: "-",
+          kd: "-",
+          winRate: "-",
+        },
+        // ✅ ya NO mandamos rankedSeasons
       },
     },
-  });
+  };
+
+  // ---------- Solo uplay ----------
+  if (platform !== "uplay") {
+    console.log(`[PLAYER] platform=${platform} (solo uplay) -> MOCK`);
+    return res.json(mockPayload);
+  }
+
+  // ---------- API KEY ----------
+  const apiKey = process.env.R6DATA_API_KEY;
+  if (!apiKey) {
+    console.log("[R6DATA] Falta R6DATA_API_KEY en .env -> MOCK");
+    return res.json({
+      ...mockPayload,
+      debug: { error: "Missing R6DATA_API_KEY" },
+    });
+  }
+
+  // ---------- CACHE ----------
+  const cacheKey = `r6data:player:uplay:${name.toLowerCase()}`;
+  const staleKey = `${cacheKey}:stale`;
+
+  if (!noCache) {
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log(`[R6DATA] cache HIT (fresh) uplay/${name}`);
+      return res.json({
+        cached: true,
+        mock: false,
+        source: "r6data",
+        debug: { cache: "fresh", tookMs: Date.now() - started },
+        data: cached,
+      });
+    }
+  } else {
+    console.log("[R6DATA] nocache=1 (debug)");
+  }
+
+  const stale = cache.get(staleKey)?.data || null;
+
+  try {
+    // ---------- 1) STATS ----------
+    const statsUrl =
+      `https://api.r6data.eu/api/stats?type=stats` +
+      `&nameOnPlatform=${encodeURIComponent(name)}` +
+      `&platformType=uplay&platform_families=pc`;
+
+    const r1 = await fetchWithTimeout(
+      statsUrl,
+      { headers: { "api-key": apiKey, Accept: "application/json" } },
+      6500,
+    );
+    const statsJson = await safeJson(r1);
+
+    console.log(`[R6DATA] stats HTTP ${r1.status}`);
+
+    // 429 rate limit
+    if (r1.status === 429) {
+      const retryAfter = statsJson?.retryAfter ?? 3600;
+      console.log("[R6DATA] 429 rate limit. retryAfter:", retryAfter);
+
+      if (stale) {
+        return res.json({
+          cached: true,
+          mock: false,
+          source: "r6data",
+          debug: {
+            cache: "stale",
+            reason: "rate_limited",
+            retryAfter,
+            tookMs: Date.now() - started,
+          },
+          data: stale,
+        });
+      }
+      return res.json({
+        ...mockPayload,
+        debug: {
+          error: "R6DATA rate limited",
+          retryAfter,
+          tookMs: Date.now() - started,
+        },
+      });
+    }
+
+    if (!r1.ok) {
+      console.log("[R6DATA] stats error:", r1.status, statsJson);
+      if (stale) {
+        return res.json({
+          cached: true,
+          mock: false,
+          source: "r6data",
+          debug: {
+            cache: "stale",
+            reason: `stats_http_${r1.status}`,
+            tookMs: Date.now() - started,
+          },
+          data: stale,
+        });
+      }
+      return res.json(mockPayload);
+    }
+
+    // ---------- 2) operatorStats ----------
+    const opsUrl =
+      `https://api.r6data.eu/api/stats?type=operatorStats` +
+      `&nameOnPlatform=${encodeURIComponent(name)}` +
+      `&platformType=uplay&modes=ranked`;
+
+    let topOperators = [];
+    try {
+      const r2 = await fetchWithTimeout(
+        opsUrl,
+        { headers: { "api-key": apiKey, Accept: "application/json" } },
+        6500,
+      );
+      const opsJson = await safeJson(r2);
+      console.log(`[R6DATA] operatorStats HTTP ${r2.status}`);
+
+      const playlists = opsJson?.split?.pc?.playlists || {};
+
+      let opsObj = playlists?.ranked?.operators || null;
+      let opsMode = "ranked";
+
+      if (!opsObj) {
+        opsObj = playlists?.unranked?.operators || null;
+        opsMode = "unranked";
+      }
+      if (!opsObj) {
+        opsObj = playlists?.casual?.operators || null;
+        opsMode = "casual";
+      }
+      if (!opsObj) {
+        opsObj = null;
+        opsMode = "none";
+      }
+
+      if (opsObj) {
+        topOperators = Object.values(opsObj)
+          .map((o) => {
+            const life = o?.rounds?.lifetime;
+            return {
+              name: o?.operator ?? o?.name ?? "-",
+              played: Number(life?.played ?? 0),
+              won: Number(life?.won ?? 0),
+              winRate:
+                typeof life?.winRate === "number"
+                  ? +life.winRate.toFixed(1)
+                  : null,
+            };
+          })
+          .sort((a, b) => (b.played ?? 0) - (a.played ?? 0))
+          .slice(0, 10);
+      }
+    } catch (e) {
+      console.log(
+        "[R6DATA] operatorStats timeout/error:",
+        String(e?.message || e),
+      );
+    }
+
+    // ---------- Parse boards ----------
+    const pffp = statsJson?.platform_families_full_profiles;
+    const profile0 = Array.isArray(pffp) ? pffp[0] : null;
+    const boards = profile0?.board_ids_full_profiles || [];
+
+    const findBoard = (id) =>
+      Array.isArray(boards) ? boards.find((b) => b?.board_id === id) : null;
+
+    const rankedBoard = findBoard("ranked");
+    const standardBoard =
+      findBoard("standard") || findBoard("living_game_mode");
+
+    // ---------- Ranked “temporada actual” ----------
+    const rankedFp0 = Array.isArray(rankedBoard?.full_profiles)
+      ? rankedBoard.full_profiles[0]
+      : null;
+
+    const prof = rankedFp0?.profile || {};
+    const st = rankedFp0?.season_statistics || {};
+
+    const rankId = Number(prof?.rank ?? 0);
+    const peakRankId = Number(prof?.max_rank ?? 0);
+
+    const mmr = prof?.rank_points ?? "-";
+    const peakMmr = prof?.max_rank_points ?? "-";
+
+    const wins = Number(st?.match_outcomes?.wins ?? 0);
+    const losses = Number(st?.match_outcomes?.losses ?? 0);
+    const abandons = Number(st?.match_outcomes?.abandons ?? 0);
+    const matches = wins + losses + abandons;
+
+    const kills = Number(st?.kills ?? 0);
+    const deaths = Number(st?.deaths ?? 0);
+    const kd =
+      deaths > 0 ? +(kills / deaths).toFixed(2) : kills > 0 ? kills : 0;
+    const winRate = matches > 0 ? +((wins / matches) * 100).toFixed(1) : 0;
+
+    const currentRankName = rankNameFromId(rankId);
+    const peakRankName = rankNameFromId(peakRankId);
+
+    // ---------- Unranked ----------
+    const unFp0 = Array.isArray(standardBoard?.full_profiles)
+      ? standardBoard.full_profiles[0]
+      : null;
+
+    const unSt = unFp0?.season_statistics || {};
+    const unWins = Number(unSt?.match_outcomes?.wins ?? 0);
+    const unLosses = Number(unSt?.match_outcomes?.losses ?? 0);
+    const unAbandons = Number(unSt?.match_outcomes?.abandons ?? 0);
+    const unMatches = unWins + unLosses + unAbandons;
+
+    const unKills = Number(unSt?.kills ?? 0);
+    const unDeaths = Number(unSt?.deaths ?? 0);
+    const unKd =
+      unDeaths > 0
+        ? +(unKills / unDeaths).toFixed(2)
+        : unKills > 0
+          ? unKills
+          : 0;
+    const unWinRate =
+      unMatches > 0 ? +((unWins / unMatches) * 100).toFixed(1) : 0;
+
+    // ---------- Banner topOperator ----------
+    const bestOpName = topOperators[0]?.name ?? topSlug;
+
+    // ---------- Payload final (SIN rankedSeasons) ----------
+    const payload = {
+      platform,
+      username: name,
+      topOperator: {
+        slug: topSlug,
+        name: bestOpName,
+        imageUrl: `/assets/operators/${topSlug}.jpg`,
+      },
+      topOperators,
+      operators: [],
+      stats: {
+        ranked: {
+          currentRank: currentRankName,
+          mmr,
+          kd,
+          winRate,
+          matches,
+          wins,
+          losses,
+          peakRank: peakRankName,
+          peakMmr,
+        },
+        unranked: {
+          matches: unMatches,
+          wins: unWins,
+          losses: unLosses,
+          kd: unKd,
+          winRate: unWinRate,
+        },
+      },
+    };
+
+    console.log("======================================================");
+    console.log(`[R6DATA] uplay/${name}`);
+    console.log(
+      "Current:",
+      currentRankName,
+      "| RankId:",
+      rankId,
+      "| MMR:",
+      mmr,
+    );
+    console.log(
+      "Peak:",
+      peakRankName,
+      "| PeakRankId:",
+      peakRankId,
+      "| Peak MMR:",
+      peakMmr,
+    );
+    console.log("Ranked:", { matches, wins, losses, kd, winRate });
+    console.log("Unranked:", { unMatches, unWins, unLosses, unKd, unWinRate });
+    console.log(
+      "TopOperators:",
+      topOperators.length
+        ? topOperators.map((x) => `${x.name}(${x.played})`).join(", ")
+        : "N/A",
+    );
+    console.log("======================================================");
+
+    // cache fresh (10 min)
+    setCache(cacheKey, payload, 1000 * 60 * 10);
+
+    // cache stale (24h)
+    cache.set(staleKey, {
+      data: payload,
+      expiresAt: Date.now() + 1000 * 60 * 60 * 24,
+    });
+
+    return res.json({
+      cached: false,
+      mock: false,
+      source: "r6data",
+      debug: { tookMs: Date.now() - started },
+      data: payload,
+    });
+  } catch (e) {
+    const msg = String(e?.message || e);
+    console.log("[R6DATA] Error/timeout:", msg);
+
+    if (stale) {
+      return res.json({
+        cached: true,
+        mock: false,
+        source: "r6data",
+        debug: {
+          cache: "stale",
+          reason: "exception_or_timeout",
+          tookMs: Date.now() - started,
+          error: msg,
+        },
+        data: stale,
+      });
+    }
+
+    return res.json({
+      ...mockPayload,
+      debug: { error: msg, tookMs: Date.now() - started },
+    });
+  }
 });
 
 // --- MOCK OPERATORS (76) ---
@@ -172,7 +581,9 @@ const OPERATORS = [
     name: "Rauora",
     side: "attacker",
     description: "Atacante centrada en presión y utilidad para abrir jugadas.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/rauora.jpg",
   },
   {
@@ -180,7 +591,9 @@ const OPERATORS = [
     name: "Striker",
     side: "attacker",
     description: "Atacante flexible orientado a entrada y duelos.",
-    health: 2, speed: 2, difficulty: 1,
+    health: 2,
+    speed: 2,
+    difficulty: 1,
     imageUrl: "/assets/operators/striker.jpg",
   },
   {
@@ -188,15 +601,20 @@ const OPERATORS = [
     name: "Deimos",
     side: "attacker",
     description: "Cazador agresivo: presiona y busca picks con información.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/deimos.jpg",
   },
   {
     slug: "ram",
     name: "Ram",
     side: "attacker",
-    description: "Especialista en destrucción y limpieza de utilidad desde arriba.",
-    health: 2, speed: 2, difficulty: 2,
+    description:
+      "Especialista en destrucción y limpieza de utilidad desde arriba.",
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/ram.jpg",
   },
   {
@@ -204,7 +622,9 @@ const OPERATORS = [
     name: "Brava",
     side: "attacker",
     description: "Hackea gadgets defensivos para girar la ronda a tu favor.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/brava.jpg",
   },
   {
@@ -212,7 +632,9 @@ const OPERATORS = [
     name: "Grim",
     side: "attacker",
     description: "Intel y control de zonas para forzar rotaciones.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/grim.jpg",
   },
   {
@@ -220,7 +642,9 @@ const OPERATORS = [
     name: "Sens",
     side: "attacker",
     description: "Corta líneas de visión para facilitar planta/avance.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/sens.jpg",
   },
   {
@@ -228,7 +652,9 @@ const OPERATORS = [
     name: "Osa",
     side: "attacker",
     description: "Escudos transparentes para empujar con seguridad.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/osa.jpg",
   },
   {
@@ -236,7 +662,9 @@ const OPERATORS = [
     name: "Flores",
     side: "attacker",
     description: "Limpia gadgets con drones explosivos a distancia.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/flores.jpg",
   },
   {
@@ -244,7 +672,9 @@ const OPERATORS = [
     name: "Zero",
     side: "attacker",
     description: "Cámaras para intel, apoyo y control de la ronda.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/zero.jpg",
   },
   {
@@ -252,7 +682,9 @@ const OPERATORS = [
     name: "Ace",
     side: "attacker",
     description: "Hard breacher rápido y sencillo de ejecutar.",
-    health: 2, speed: 2, difficulty: 1,
+    health: 2,
+    speed: 2,
+    difficulty: 1,
     imageUrl: "/assets/operators/ace.jpg",
   },
   {
@@ -260,7 +692,9 @@ const OPERATORS = [
     name: "Iana",
     side: "attacker",
     description: "Intel para entradas: dron humano para despejar.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/iana.jpg",
   },
   {
@@ -268,7 +702,9 @@ const OPERATORS = [
     name: "Kali",
     side: "attacker",
     description: "Antigadget a larga distancia con gran potencial de pick.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/kali.jpg",
   },
   {
@@ -276,7 +712,9 @@ const OPERATORS = [
     name: "Amaru",
     side: "attacker",
     description: "Entrada vertical rápida para agresión y sorpresas.",
-    health: 2, speed: 3, difficulty: 2,
+    health: 2,
+    speed: 3,
+    difficulty: 2,
     imageUrl: "/assets/operators/amaru.jpg",
   },
   {
@@ -284,7 +722,9 @@ const OPERATORS = [
     name: "NOKK",
     side: "attacker",
     description: "Infiltración y sigilo: ideal para flancos.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/nokk.jpg",
   },
   {
@@ -292,7 +732,9 @@ const OPERATORS = [
     name: "Gridlock",
     side: "attacker",
     description: "Control de rotaciones y post-plant con trampas.",
-    health: 3, speed: 1, difficulty: 2,
+    health: 3,
+    speed: 1,
+    difficulty: 2,
     imageUrl: "/assets/operators/gridlock.jpg",
   },
   {
@@ -300,7 +742,9 @@ const OPERATORS = [
     name: "Nomad",
     side: "attacker",
     description: "Cierra flancos y protege la planta con empujes.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/nomad.jpg",
   },
   {
@@ -308,7 +752,9 @@ const OPERATORS = [
     name: "Maverick",
     side: "attacker",
     description: "Hard breach quirúrgico con soplete: alto skill ceiling.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/maverick.jpg",
   },
   {
@@ -316,7 +762,9 @@ const OPERATORS = [
     name: "Lion",
     side: "attacker",
     description: "Escaneo global para coordinar pushes.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/lion.jpg",
   },
   {
@@ -324,7 +772,9 @@ const OPERATORS = [
     name: "Finka",
     side: "attacker",
     description: "Soporte y sustain del equipo para entradas.",
-    health: 2, speed: 2, difficulty: 1,
+    health: 2,
+    speed: 2,
+    difficulty: 1,
     imageUrl: "/assets/operators/finka.jpg",
   },
   {
@@ -332,7 +782,9 @@ const OPERATORS = [
     name: "Dokkaebi",
     side: "attacker",
     description: "Disrupción e intel: fuerza llamadas y hackea cams.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/dokkaebi.jpg",
   },
   {
@@ -340,7 +792,9 @@ const OPERATORS = [
     name: "Zofia",
     side: "attacker",
     description: "Utilidad explosiva/aturdidora muy completa.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/zofia.jpg",
   },
   {
@@ -348,7 +802,9 @@ const OPERATORS = [
     name: "Ying",
     side: "attacker",
     description: "Entry con flashes: ideal para ejecuciones rápidas.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/ying.jpg",
   },
   {
@@ -356,7 +812,9 @@ const OPERATORS = [
     name: "Jackal",
     side: "attacker",
     description: "Rastrea roamers y castiga rotaciones.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/jackal.jpg",
   },
   {
@@ -364,7 +822,9 @@ const OPERATORS = [
     name: "Hibana",
     side: "attacker",
     description: "Hard breacher para aperturas a distancia.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/hibana.jpg",
   },
   {
@@ -372,7 +832,9 @@ const OPERATORS = [
     name: "Capitão",
     side: "attacker",
     description: "Flechas de humo/fuego para cortar y negar áreas.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/capitao.jpg",
   },
   {
@@ -380,7 +842,9 @@ const OPERATORS = [
     name: "Blackbeard",
     side: "attacker",
     description: "Duelos con ventaja desde ángulos gracias a su escudo.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/blackbeard.jpg",
   },
   {
@@ -388,7 +852,9 @@ const OPERATORS = [
     name: "Buck",
     side: "attacker",
     description: "Destrucción vertical y flex para abrir líneas.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/buck.jpg",
   },
   {
@@ -396,7 +862,9 @@ const OPERATORS = [
     name: "Sledge",
     side: "attacker",
     description: "Martillo para romper superficies y limpiar utilidad.",
-    health: 3, speed: 1, difficulty: 1,
+    health: 3,
+    speed: 1,
+    difficulty: 1,
     imageUrl: "/assets/operators/sledge.jpg",
   },
   {
@@ -404,7 +872,9 @@ const OPERATORS = [
     name: "Thatcher",
     side: "attacker",
     description: "Antigadget clásico para habilitar breachers.",
-    health: 2, speed: 2, difficulty: 1,
+    health: 2,
+    speed: 2,
+    difficulty: 1,
     imageUrl: "/assets/operators/thatcher.jpg",
   },
   {
@@ -412,7 +882,9 @@ const OPERATORS = [
     name: "Ash",
     side: "attacker",
     description: "Entry rápida con destrucción puntual.",
-    health: 1, speed: 3, difficulty: 1,
+    health: 1,
+    speed: 3,
+    difficulty: 1,
     imageUrl: "/assets/operators/ash.jpg",
   },
   {
@@ -420,7 +892,9 @@ const OPERATORS = [
     name: "Thermite",
     side: "attacker",
     description: "Hard breach principal: aperturas grandes en refuerzo.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/thermite.jpg",
   },
   {
@@ -428,7 +902,9 @@ const OPERATORS = [
     name: "Montagne",
     side: "attacker",
     description: "Escudo extendible para empujar y plantar con cover.",
-    health: 3, speed: 1, difficulty: 2,
+    health: 3,
+    speed: 1,
+    difficulty: 2,
     imageUrl: "/assets/operators/montagne.jpg",
   },
   {
@@ -436,7 +912,9 @@ const OPERATORS = [
     name: "Twitch",
     side: "attacker",
     description: "Drones para destruir gadgets y sacar info.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/twitch.jpg",
   },
   {
@@ -444,7 +922,9 @@ const OPERATORS = [
     name: "Blitz",
     side: "attacker",
     description: "Escudo con flash para entry agresiva a corta distancia.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/blitz.jpg",
   },
   {
@@ -452,7 +932,9 @@ const OPERATORS = [
     name: "IQ",
     side: "attacker",
     description: "Detecta electrónica y abre rutas seguras.",
-    health: 1, speed: 3, difficulty: 2,
+    health: 1,
+    speed: 3,
+    difficulty: 2,
     imageUrl: "/assets/operators/iq.jpg",
   },
   {
@@ -460,7 +942,9 @@ const OPERATORS = [
     name: "Fuze",
     side: "attacker",
     description: "Presión con cargas de racimo para limpiar defensas.",
-    health: 3, speed: 1, difficulty: 2,
+    health: 3,
+    speed: 1,
+    difficulty: 2,
     imageUrl: "/assets/operators/fuze.jpg",
   },
   {
@@ -468,7 +952,9 @@ const OPERATORS = [
     name: "Glaz",
     side: "attacker",
     description: "Tirador: controla líneas largas y through-smoke plays.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/glaz.jpg",
   },
 
@@ -478,7 +964,9 @@ const OPERATORS = [
     name: "Denari",
     side: "defender",
     description: "Defensora orientada a control de zona y anclaje.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/denari.jpg",
   },
   {
@@ -486,7 +974,9 @@ const OPERATORS = [
     name: "Skopós",
     side: "defender",
     description: "Defensora con enfoque en control y utilidad táctica.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/skopos.jpg",
   },
   {
@@ -494,7 +984,9 @@ const OPERATORS = [
     name: "Sentry",
     side: "defender",
     description: "Defensora para sostener zonas y castigar pushes.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/sentry.jpg",
   },
   {
@@ -502,7 +994,9 @@ const OPERATORS = [
     name: "Tubarão",
     side: "defender",
     description: "Control de ritmo: frena pushes y niega utilidad.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/tubarao.jpg",
   },
   {
@@ -510,7 +1004,9 @@ const OPERATORS = [
     name: "Fenrir",
     side: "defender",
     description: "Trampas para desorientar y ganar duelos.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/fenrir.jpg",
   },
   {
@@ -518,7 +1014,9 @@ const OPERATORS = [
     name: "Solis",
     side: "defender",
     description: "Caza drones y gadgets para negar intel.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/solis.jpg",
   },
   {
@@ -526,7 +1024,9 @@ const OPERATORS = [
     name: "Azami",
     side: "defender",
     description: "Moldea el mapa creando coberturas y bloqueos.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/azami.jpg",
   },
   {
@@ -534,7 +1034,9 @@ const OPERATORS = [
     name: "Thorn",
     side: "defender",
     description: "Trapper con presión explosiva para frenar entradas.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/thorn.jpg",
   },
   {
@@ -542,7 +1044,9 @@ const OPERATORS = [
     name: "Thunderbird",
     side: "defender",
     description: "Soporte con curación para aguantar el sitio.",
-    health: 2, speed: 2, difficulty: 1,
+    health: 2,
+    speed: 2,
+    difficulty: 1,
     imageUrl: "/assets/operators/thunderbird.jpg",
   },
   {
@@ -550,7 +1054,9 @@ const OPERATORS = [
     name: "Aruni",
     side: "defender",
     description: "Bloqueos láser para drenar utilidad y tiempo.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/aruni.jpg",
   },
   {
@@ -558,7 +1064,9 @@ const OPERATORS = [
     name: "Melusi",
     side: "defender",
     description: "Control de zona ralentizando y forzando decisiones.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/melusi.jpg",
   },
   {
@@ -566,7 +1074,9 @@ const OPERATORS = [
     name: "Oryx",
     side: "defender",
     description: "Roamer agresivo con movilidad para picks.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/oryx.jpg",
   },
   {
@@ -574,7 +1084,9 @@ const OPERATORS = [
     name: "Wamai",
     side: "defender",
     description: "Antigrenadas: reposiciona y protege setups.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/wamai.jpg",
   },
   {
@@ -582,7 +1094,9 @@ const OPERATORS = [
     name: "Goyo",
     side: "defender",
     description: "Negación de zona y control del tiempo con fuego.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/goyo.jpg",
   },
   {
@@ -590,7 +1104,9 @@ const OPERATORS = [
     name: "Warden",
     side: "defender",
     description: "Counter de humo/flash para sostener ángulos.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/warden.jpg",
   },
   {
@@ -598,7 +1114,9 @@ const OPERATORS = [
     name: "Mozzie",
     side: "defender",
     description: "Niega drones y gana intel capturándolos.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/mozzie.jpg",
   },
   {
@@ -606,7 +1124,9 @@ const OPERATORS = [
     name: "Kaid",
     side: "defender",
     description: "Refuerza paredes/hatches con electricidad a distancia.",
-    health: 3, speed: 1, difficulty: 2,
+    health: 3,
+    speed: 1,
+    difficulty: 2,
     imageUrl: "/assets/operators/kaid.jpg",
   },
   {
@@ -614,7 +1134,9 @@ const OPERATORS = [
     name: "Clash",
     side: "defender",
     description: "Escudo eléctrico para frenar pushes y dar info.",
-    health: 3, speed: 1, difficulty: 3,
+    health: 3,
+    speed: 1,
+    difficulty: 3,
     imageUrl: "/assets/operators/clash.jpg",
   },
   {
@@ -622,7 +1144,9 @@ const OPERATORS = [
     name: "Maestro",
     side: "defender",
     description: "Cámaras blindadas para info y presión constante.",
-    health: 3, speed: 1, difficulty: 2,
+    health: 3,
+    speed: 1,
+    difficulty: 2,
     imageUrl: "/assets/operators/maestro.jpg",
   },
   {
@@ -630,7 +1154,9 @@ const OPERATORS = [
     name: "Alibi",
     side: "defender",
     description: "Engaño e info: castiga disparos a señuelos.",
-    health: 1, speed: 3, difficulty: 3,
+    health: 1,
+    speed: 3,
+    difficulty: 3,
     imageUrl: "/assets/operators/alibi.jpg",
   },
   {
@@ -638,7 +1164,9 @@ const OPERATORS = [
     name: "Vigil",
     side: "defender",
     description: "Roamer sigiloso: niega drones y flanquea.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/vigil.jpg",
   },
   {
@@ -646,7 +1174,9 @@ const OPERATORS = [
     name: "Ela",
     side: "defender",
     description: "Entry denial con trampas de aturdimiento.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/ela.jpg",
   },
   {
@@ -654,7 +1184,9 @@ const OPERATORS = [
     name: "Lesion",
     side: "defender",
     description: "Trampas para intel y desgaste en el tiempo.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/lesion.jpg",
   },
   {
@@ -662,7 +1194,9 @@ const OPERATORS = [
     name: "Mira",
     side: "defender",
     description: "Ventanas unidireccionales para control total del site.",
-    health: 3, speed: 1, difficulty: 3,
+    health: 3,
+    speed: 1,
+    difficulty: 3,
     imageUrl: "/assets/operators/mira.jpg",
   },
   {
@@ -670,7 +1204,9 @@ const OPERATORS = [
     name: "Echo",
     side: "defender",
     description: "Drones para info y desorientar: gran post-plant.",
-    health: 2, speed: 2, difficulty: 3,
+    health: 2,
+    speed: 2,
+    difficulty: 3,
     imageUrl: "/assets/operators/echo.jpg",
   },
   {
@@ -678,7 +1214,9 @@ const OPERATORS = [
     name: "Caveira",
     side: "defender",
     description: "Roamer de sigilo: busca interrogatorios y picks.",
-    health: 1, speed: 3, difficulty: 3,
+    health: 1,
+    speed: 3,
+    difficulty: 3,
     imageUrl: "/assets/operators/caveira.jpg",
   },
   {
@@ -686,7 +1224,9 @@ const OPERATORS = [
     name: "Valkyrie",
     side: "defender",
     description: "Cámaras extra para info y control del mapa.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/valkyrie.jpg",
   },
   {
@@ -694,7 +1234,9 @@ const OPERATORS = [
     name: "Frost",
     side: "defender",
     description: "Trampas para castigar entradas y saltos.",
-    health: 2, speed: 2, difficulty: 1,
+    health: 2,
+    speed: 2,
+    difficulty: 1,
     imageUrl: "/assets/operators/frost.jpg",
   },
   {
@@ -702,7 +1244,9 @@ const OPERATORS = [
     name: "Mute",
     side: "defender",
     description: "Inhibidores para negar drones y gadgets.",
-    health: 2, speed: 2, difficulty: 1,
+    health: 2,
+    speed: 2,
+    difficulty: 1,
     imageUrl: "/assets/operators/mute.jpg",
   },
   {
@@ -710,7 +1254,9 @@ const OPERATORS = [
     name: "Smoke",
     side: "defender",
     description: "Negación de zona en el late round con gas.",
-    health: 3, speed: 1, difficulty: 3,
+    health: 3,
+    speed: 1,
+    difficulty: 3,
     imageUrl: "/assets/operators/smoke.jpg",
   },
   {
@@ -718,7 +1264,9 @@ const OPERATORS = [
     name: "Castle",
     side: "defender",
     description: "Refuerzos de barricada para moldear rutas.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/castle.jpg",
   },
   {
@@ -726,7 +1274,9 @@ const OPERATORS = [
     name: "Pulse",
     side: "defender",
     description: "Intel: localiza enemigos a través de superficies.",
-    health: 1, speed: 3, difficulty: 2,
+    health: 1,
+    speed: 3,
+    difficulty: 2,
     imageUrl: "/assets/operators/pulse.jpg",
   },
   {
@@ -734,7 +1284,9 @@ const OPERATORS = [
     name: "Doc",
     side: "defender",
     description: "Soporte con curación y revive para aguantar.",
-    health: 3, speed: 1, difficulty: 1,
+    health: 3,
+    speed: 1,
+    difficulty: 1,
     imageUrl: "/assets/operators/doc.jpg",
   },
   {
@@ -742,7 +1294,9 @@ const OPERATORS = [
     name: "Rook",
     side: "defender",
     description: "Armadura para el equipo: fácil y sólido.",
-    health: 3, speed: 1, difficulty: 1,
+    health: 3,
+    speed: 1,
+    difficulty: 1,
     imageUrl: "/assets/operators/rook.jpg",
   },
   {
@@ -750,7 +1304,9 @@ const OPERATORS = [
     name: "Jager",
     side: "defender",
     description: "Antiproyectiles para proteger el setup.",
-    health: 2, speed: 2, difficulty: 2,
+    health: 2,
+    speed: 2,
+    difficulty: 2,
     imageUrl: "/assets/operators/jager.jpg",
   },
   {
@@ -758,7 +1314,9 @@ const OPERATORS = [
     name: "Bandit",
     side: "defender",
     description: "Electricidad para negar breaches; juego activo.",
-    health: 1, speed: 3, difficulty: 3,
+    health: 1,
+    speed: 3,
+    difficulty: 3,
     imageUrl: "/assets/operators/bandit.jpg",
   },
   {
@@ -766,7 +1324,9 @@ const OPERATORS = [
     name: "Tachanka",
     side: "defender",
     description: "Negación de zona con fuego y control del tiempo.",
-    health: 3, speed: 1, difficulty: 2,
+    health: 3,
+    speed: 1,
+    difficulty: 2,
     imageUrl: "/assets/operators/tachanka.jpg",
   },
   {
@@ -774,7 +1334,9 @@ const OPERATORS = [
     name: "Kapkan",
     side: "defender",
     description: "Trampas explosivas en puertas para castigar rushes.",
-    health: 2, speed: 2, difficulty: 1,
+    health: 2,
+    speed: 2,
+    difficulty: 1,
     imageUrl: "/assets/operators/kapkan.jpg",
   },
 ];
