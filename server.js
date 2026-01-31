@@ -113,53 +113,459 @@ app.get("/api/youtube/latest-r6", async (req, res) => {
   }
 });
 
-// ---- TU MOCK DE PLAYER (déjalo igual) ----
-app.get("/api/player/:platform/:name", (req, res) => {
+// --- timeout para fetch ---
+async function fetchWithTimeout(url, options = {}, timeoutMs = 6500) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { ...options, signal: controller.signal });
+    return r;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+// --- json seguro ---
+async function safeJson(resp) {
+  const txt = await resp.text();
+  try {
+    return JSON.parse(txt);
+  } catch {
+    return { _raw: txt };
+  }
+}
+
+// --- rank id -> nombre (sin /api/ranks) ---
+const RANK_ORDER = [
+  "Cobre V",
+  "Cobre IV",
+  "Cobre III",
+  "Cobre II",
+  "Cobre I",
+  "Bronce V",
+  "Bronce IV",
+  "Bronce III",
+  "Bronce II",
+  "Bronce I",
+  "Plata V",
+  "Plata IV",
+  "Plata III",
+  "Plata II",
+  "Plata I",
+  "Oro V",
+  "Oro IV",
+  "Oro III",
+  "Oro II",
+  "Oro I",
+  "Platino V",
+  "Platino IV",
+  "Platino III",
+  "Platino II",
+  "Platino I",
+  "Esmeralda V",
+  "Esmeralda IV",
+  "Esmeralda III",
+  "Esmeralda II",
+  "Esmeralda I",
+  "Diamante V",
+  "Diamante IV",
+  "Diamante III",
+  "Diamante II",
+  "Diamante I",
+  "Campeón",
+];
+
+function rankNameFromId(id) {
+  const n = Number(id);
+  if (!Number.isFinite(n) || n <= 0) return "Sin rango";
+  return RANK_ORDER[n - 1] || `#${n}`;
+}
+
+app.get("/api/player/:platform/:name", async (req, res) => {
   const { platform, name } = req.params;
+  const noCache = req.query.nocache === "1";
+  const started = Date.now();
 
-  const ops = ["sledge", "ash", "jager", "thermite", "mute", "hibana", "smoke", "iq"];
-  const idx = Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % ops.length;
-  const topOperatorSlug = ops[idx];
+  // ---------- MOCK base ----------
+  const opsFallback = [
+    "sledge",
+    "ash",
+    "jager",
+    "thermite",
+    "mute",
+    "hibana",
+    "smoke",
+    "iq",
+  ];
+  const idx =
+    Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) %
+    opsFallback.length;
+  const topSlug = opsFallback[idx];
 
-  res.json({
+  const mockPayload = {
     cached: false,
     mock: true,
+    source: "mock",
+    debug: { tookMs: Date.now() - started },
     data: {
       platform,
       username: name,
       topOperator: {
-        slug: topOperatorSlug,
-        name: topOperatorSlug.charAt(0).toUpperCase() + topOperatorSlug.slice(1),
-        imageUrl: `/assets/operators/${topOperatorSlug}.jpg`,
+        slug: topSlug,
+        name: topSlug.charAt(0).toUpperCase() + topSlug.slice(1),
+        imageUrl: `/assets/operators/${topSlug}.jpg`,
       },
-      // (tu mock aquí...)
-      overview: {
-        rank: "Oro II",
-        mmr: 2784,
-        kd: 1.12,
-        winRate: 54.3,
-        matches: 312,
-        wins: 169,
-        losses: 143,
-      },
-      operators: [
-        { name: "Ash", slug: "ash", matches: 120, kd: 1.25, wins: 65 },
-        { name: "Jäger", slug: "jager", matches: 95, kd: 1.18, wins: 51 },
-        { name: "Sledge", slug: "sledge", matches: 82, kd: 1.05, wins: 43 },
-        { name: "Thermite", slug: "thermite", matches: 70, kd: 1.01, wins: 39 },
-      ],
-      // stats mock si quieres...
+      topOperators: [],
+      operators: [],
       stats: {
-        ranked: { currentRank: "Oro II", mmr: 2784, kd: 1.12, winRate: 54.3 },
-        unranked: { matches: 220, wins: 118, losses: 102, kd: 1.08, winRate: 53.6 },
-        rankedSeasons: [
-          { season: "Y9S4", rank: "Oro II", mmr: 2784 },
-          { season: "Y9S3", rank: "Oro I", mmr: 2901 },
-          { season: "Y9S2", rank: "Platino V", mmr: 3200 },
-        ],
+        ranked: {
+          currentRank: "-",
+          mmr: "-",
+          kd: "-",
+          winRate: "-",
+          matches: "-",
+          wins: "-",
+          losses: "-",
+          peakRank: "-",
+          peakMmr: "-",
+        },
+        unranked: {
+          matches: "-",
+          wins: "-",
+          losses: "-",
+          kd: "-",
+          winRate: "-",
+        },
+        // ✅ ya NO mandamos rankedSeasons
       },
     },
-  });
+  };
+
+  // ---------- Solo uplay ----------
+  if (platform !== "uplay") {
+    console.log(`[PLAYER] platform=${platform} (solo uplay) -> MOCK`);
+    return res.json(mockPayload);
+  }
+
+  // ---------- API KEY ----------
+  const apiKey = process.env.R6DATA_API_KEY;
+  if (!apiKey) {
+    console.log("[R6DATA] Falta R6DATA_API_KEY en .env -> MOCK");
+    return res.json({
+      ...mockPayload,
+      debug: { error: "Missing R6DATA_API_KEY" },
+    });
+  }
+
+  // ---------- CACHE ----------
+  const cacheKey = `r6data:player:uplay:${name.toLowerCase()}`;
+  const staleKey = `${cacheKey}:stale`;
+
+  if (!noCache) {
+    const cached = getCache(cacheKey);
+    if (cached) {
+      console.log(`[R6DATA] cache HIT (fresh) uplay/${name}`);
+      return res.json({
+        cached: true,
+        mock: false,
+        source: "r6data",
+        debug: { cache: "fresh", tookMs: Date.now() - started },
+        data: cached,
+      });
+    }
+  } else {
+    console.log("[R6DATA] nocache=1 (debug)");
+  }
+
+  const stale = cache.get(staleKey)?.data || null;
+
+  try {
+    // ---------- 1) STATS ----------
+    const statsUrl =
+      `https://api.r6data.eu/api/stats?type=stats` +
+      `&nameOnPlatform=${encodeURIComponent(name)}` +
+      `&platformType=uplay&platform_families=pc`;
+
+    const r1 = await fetchWithTimeout(
+      statsUrl,
+      { headers: { "api-key": apiKey, Accept: "application/json" } },
+      6500,
+    );
+    const statsJson = await safeJson(r1);
+
+    console.log(`[R6DATA] stats HTTP ${r1.status}`);
+
+    // 429 rate limit
+    if (r1.status === 429) {
+      const retryAfter = statsJson?.retryAfter ?? 3600;
+      console.log("[R6DATA] 429 rate limit. retryAfter:", retryAfter);
+
+      if (stale) {
+        return res.json({
+          cached: true,
+          mock: false,
+          source: "r6data",
+          debug: {
+            cache: "stale",
+            reason: "rate_limited",
+            retryAfter,
+            tookMs: Date.now() - started,
+          },
+          data: stale,
+        });
+      }
+      return res.json({
+        ...mockPayload,
+        debug: {
+          error: "R6DATA rate limited",
+          retryAfter,
+          tookMs: Date.now() - started,
+        },
+      });
+    }
+
+    if (!r1.ok) {
+      console.log("[R6DATA] stats error:", r1.status, statsJson);
+      if (stale) {
+        return res.json({
+          cached: true,
+          mock: false,
+          source: "r6data",
+          debug: {
+            cache: "stale",
+            reason: `stats_http_${r1.status}`,
+            tookMs: Date.now() - started,
+          },
+          data: stale,
+        });
+      }
+      return res.json(mockPayload);
+    }
+
+    // ---------- 2) operatorStats ----------
+    const opsUrl =
+      `https://api.r6data.eu/api/stats?type=operatorStats` +
+      `&nameOnPlatform=${encodeURIComponent(name)}` +
+      `&platformType=uplay&modes=ranked`;
+
+    let topOperators = [];
+    try {
+      const r2 = await fetchWithTimeout(
+        opsUrl,
+        { headers: { "api-key": apiKey, Accept: "application/json" } },
+        6500,
+      );
+      const opsJson = await safeJson(r2);
+      console.log(`[R6DATA] operatorStats HTTP ${r2.status}`);
+
+      const playlists = opsJson?.split?.pc?.playlists || {};
+
+      let opsObj = playlists?.ranked?.operators || null;
+      let opsMode = "ranked";
+
+      if (!opsObj) {
+        opsObj = playlists?.unranked?.operators || null;
+        opsMode = "unranked";
+      }
+      if (!opsObj) {
+        opsObj = playlists?.casual?.operators || null;
+        opsMode = "casual";
+      }
+      if (!opsObj) {
+        opsObj = null;
+        opsMode = "none";
+      }
+
+      if (opsObj) {
+        topOperators = Object.values(opsObj)
+          .map((o) => {
+            const life = o?.rounds?.lifetime;
+            return {
+              name: o?.operator ?? o?.name ?? "-",
+              played: Number(life?.played ?? 0),
+              won: Number(life?.won ?? 0),
+              winRate:
+                typeof life?.winRate === "number"
+                  ? +life.winRate.toFixed(1)
+                  : null,
+            };
+          })
+          .sort((a, b) => (b.played ?? 0) - (a.played ?? 0))
+          .slice(0, 10);
+      }
+    } catch (e) {
+      console.log(
+        "[R6DATA] operatorStats timeout/error:",
+        String(e?.message || e),
+      );
+    }
+
+    // ---------- Parse boards ----------
+    const pffp = statsJson?.platform_families_full_profiles;
+    const profile0 = Array.isArray(pffp) ? pffp[0] : null;
+    const boards = profile0?.board_ids_full_profiles || [];
+
+    const findBoard = (id) =>
+      Array.isArray(boards) ? boards.find((b) => b?.board_id === id) : null;
+
+    const rankedBoard = findBoard("ranked");
+    const standardBoard =
+      findBoard("standard") || findBoard("living_game_mode");
+
+    // ---------- Ranked “temporada actual” ----------
+    const rankedFp0 = Array.isArray(rankedBoard?.full_profiles)
+      ? rankedBoard.full_profiles[0]
+      : null;
+
+    const prof = rankedFp0?.profile || {};
+    const st = rankedFp0?.season_statistics || {};
+
+    const rankId = Number(prof?.rank ?? 0);
+    const peakRankId = Number(prof?.max_rank ?? 0);
+
+    const mmr = prof?.rank_points ?? "-";
+    const peakMmr = prof?.max_rank_points ?? "-";
+
+    const wins = Number(st?.match_outcomes?.wins ?? 0);
+    const losses = Number(st?.match_outcomes?.losses ?? 0);
+    const abandons = Number(st?.match_outcomes?.abandons ?? 0);
+    const matches = wins + losses + abandons;
+
+    const kills = Number(st?.kills ?? 0);
+    const deaths = Number(st?.deaths ?? 0);
+    const kd =
+      deaths > 0 ? +(kills / deaths).toFixed(2) : kills > 0 ? kills : 0;
+    const winRate = matches > 0 ? +((wins / matches) * 100).toFixed(1) : 0;
+
+    const currentRankName = rankNameFromId(rankId);
+    const peakRankName = rankNameFromId(peakRankId);
+
+    // ---------- Unranked ----------
+    const unFp0 = Array.isArray(standardBoard?.full_profiles)
+      ? standardBoard.full_profiles[0]
+      : null;
+
+    const unSt = unFp0?.season_statistics || {};
+    const unWins = Number(unSt?.match_outcomes?.wins ?? 0);
+    const unLosses = Number(unSt?.match_outcomes?.losses ?? 0);
+    const unAbandons = Number(unSt?.match_outcomes?.abandons ?? 0);
+    const unMatches = unWins + unLosses + unAbandons;
+
+    const unKills = Number(unSt?.kills ?? 0);
+    const unDeaths = Number(unSt?.deaths ?? 0);
+    const unKd =
+      unDeaths > 0
+        ? +(unKills / unDeaths).toFixed(2)
+        : unKills > 0
+          ? unKills
+          : 0;
+    const unWinRate =
+      unMatches > 0 ? +((unWins / unMatches) * 100).toFixed(1) : 0;
+
+    // ---------- Banner topOperator ----------
+    const bestOpName = topOperators[0]?.name ?? topSlug;
+
+    // ---------- Payload final (SIN rankedSeasons) ----------
+    const payload = {
+      platform,
+      username: name,
+      topOperator: {
+        slug: topSlug,
+        name: bestOpName,
+        imageUrl: `/assets/operators/${topSlug}.jpg`,
+      },
+      topOperators,
+      operators: [],
+      stats: {
+        ranked: {
+          currentRank: currentRankName,
+          mmr,
+          kd,
+          winRate,
+          matches,
+          wins,
+          losses,
+          peakRank: peakRankName,
+          peakMmr,
+        },
+        unranked: {
+          matches: unMatches,
+          wins: unWins,
+          losses: unLosses,
+          kd: unKd,
+          winRate: unWinRate,
+        },
+      },
+    };
+
+    console.log("======================================================");
+    console.log(`[R6DATA] uplay/${name}`);
+    console.log(
+      "Current:",
+      currentRankName,
+      "| RankId:",
+      rankId,
+      "| MMR:",
+      mmr,
+    );
+    console.log(
+      "Peak:",
+      peakRankName,
+      "| PeakRankId:",
+      peakRankId,
+      "| Peak MMR:",
+      peakMmr,
+    );
+    console.log("Ranked:", { matches, wins, losses, kd, winRate });
+    console.log("Unranked:", { unMatches, unWins, unLosses, unKd, unWinRate });
+    console.log(
+      "TopOperators:",
+      topOperators.length
+        ? topOperators.map((x) => `${x.name}(${x.played})`).join(", ")
+        : "N/A",
+    );
+    console.log("======================================================");
+
+    // cache fresh (10 min)
+    setCache(cacheKey, payload, 1000 * 60 * 10);
+
+    // cache stale (24h)
+    cache.set(staleKey, {
+      data: payload,
+      expiresAt: Date.now() + 1000 * 60 * 60 * 24,
+    });
+
+    return res.json({
+      cached: false,
+      mock: false,
+      source: "r6data",
+      debug: { tookMs: Date.now() - started },
+      data: payload,
+    });
+  } catch (e) {
+    const msg = String(e?.message || e);
+    console.log("[R6DATA] Error/timeout:", msg);
+
+    if (stale) {
+      return res.json({
+        cached: true,
+        mock: false,
+        source: "r6data",
+        debug: {
+          cache: "stale",
+          reason: "exception_or_timeout",
+          tookMs: Date.now() - started,
+          error: msg,
+        },
+        data: stale,
+      });
+    }
+
+    return res.json({
+      ...mockPayload,
+      debug: { error: msg, tookMs: Date.now() - started },
+    });
+  }
 });
 
 // --- MOCK OPERATORS (76) ---
