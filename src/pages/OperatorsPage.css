@@ -1,127 +1,350 @@
-.opsPage{
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 22px 16px 40px;
+/* =========================
+   OperatorsPage.css (NEW)
+   clean + premium + readable
+========================= */
+
+:root{
+  --bg0: #070A12;
+  --bg1: #0b1021;
+  --card: rgba(17,24,39,0.58);
+  --card2: rgba(255,255,255,0.04);
+  --stroke: rgba(255,255,255,0.14);
+  --stroke2: rgba(255,255,255,0.20);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.72);
+  --muted2: rgba(255,255,255,0.55);
+  --shadow: 0 18px 60px rgba(0,0,0,0.45);
+  --shadow2: 0 14px 40px rgba(0,0,0,0.38);
+  --r: 18px;
+  --r2: 14px;
+
+  --atk: rgba(34,197,94,0.95);
+  --def: rgba(59,130,246,0.95);
+  --gold: rgba(245,199,106,0.95);
 }
 
+.opsPage{
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 22px 16px 54px;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Background cinematic */
+.opsPage::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(900px 460px at 18% 10%, rgba(220,38,38,.10), transparent 60%),
+    radial-gradient(760px 460px at 85% 18%, rgba(59,130,246,.10), transparent 60%),
+    radial-gradient(860px 520px at 55% 92%, rgba(245,199,106,.10), transparent 60%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
+}
+
+.opsPage::after{
+  content:"";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .09;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='320' height='320' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
+}
+
+/* ========== HEADER ========== */
 .opsHeader{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:16px;
+  display: grid;
+  grid-template-columns: 1fr minmax(320px, 440px);
+  gap: 16px;
+  align-items: end;
   margin-bottom: 18px;
+  padding: 16px;
+  border-radius: var(--r);
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 900px){
+  .opsHeader{
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+.opsBackBtn{
+  align-self: flex-start;
+  margin-bottom: 10px;
+  border: 1px solid var(--stroke);
+  background: rgba(17,24,39,0.62);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease, opacity .12s ease, border-color .12s ease;
+}
+
+.opsBackBtn:hover{
+  transform: translateX(-2px);
+  background: rgba(17,24,39,0.78);
+  border-color: var(--stroke2);
+  opacity: .98;
 }
 
 .opsTitle{
   margin:0;
-  font-size: 34px;
-  letter-spacing: .3px;
+  font-size: 40px;
+  font-weight: 950;
+  letter-spacing: .2px;
+  color: var(--text);
+  text-shadow: 0 16px 40px rgba(0,0,0,0.55);
 }
 
 .opsSubtitle{
-  margin:6px 0 0;
-  opacity:.75;
+  margin: 10px 0 0;
+  opacity: .80;
+  color: var(--muted);
+  font-size: 14px;
 }
 
+/* controls */
 .opsControls{
   display:flex;
-  flex-direction:column;
-  gap:10px;
-  min-width: 320px;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .opsSearch{
   width:100%;
+  height: 42px;
   padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(17,24,39,0.7);
-  color: #fff;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(17,24,39,0.72);
+  color: var(--text);
   outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
 .opsSearch::placeholder{
-  color: rgba(255,255,255,0.55);
+  color: var(--muted2);
+}
+
+.opsSearch:focus{
+  border-color: rgba(245,199,106,.45);
+  box-shadow: 0 0 0 4px rgba(245,199,106,.12);
+  background: rgba(17,24,39,0.82);
 }
 
 .opsTabs{
   display:flex;
-  gap:8px;
-  justify-content:flex-end;
-  flex-wrap:wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.opsSortRow{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  width: 100%;
+}
+
+.opsSortSelect{
+  flex:1;
+  height: 40px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(17,24,39,0.62);
+  color: var(--text);
+  outline: none;
+}
+
+.opsSortDirBtn{
+  width: 44px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: rgba(17,24,39,0.62);
+  color: var(--text);
+  font-weight: 950;
+  cursor:pointer;
+  transition: transform .12s ease, background .12s ease, opacity .12s ease, border-color .12s ease;
+}
+
+.opsSortDirBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(17,24,39,0.78);
+  border-color: var(--stroke2);
+  opacity: .98;
 }
 
 .opsTab{
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(17,24,39,0.45);
-  color: rgba(255,255,255,0.85);
-  padding: 8px 10px;
-  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: rgba(17,24,39,0.52);
+  color: rgba(255,255,255,0.86);
+  padding: 8px 14px;
+  height: 40px;
+  border-radius: 999px;
   cursor:pointer;
-  font-weight:600;
-  transition: transform .12s ease, opacity .12s ease, background .12s ease;
+  font-weight: 900;
+  letter-spacing: .1px;
+  transition: transform .12s ease, opacity .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
 }
 
 .opsTab:hover{
   transform: translateY(-1px);
-  opacity:.95;
+  border-color: var(--stroke2);
+  opacity: .98;
 }
 
 .opsTab.isActive{
-  background: rgba(255,255,255,0.10);
-  color:#fff;
-  border-color: rgba(255,255,255,0.22);
+  border-color: rgba(245,199,106,0.45);
+  background: rgba(245,199,106,0.14);
+  color: rgba(245,199,106,0.98);
+  box-shadow: 0 0 0 4px rgba(245,199,106,0.10);
 }
 
+/* error */
 .opsError{
   margin: 12px 0;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 14px;
   background: rgba(239,68,68,0.12);
   border: 1px solid rgba(239,68,68,0.25);
+  color: var(--text);
 }
 
+/* ========== GRID ========== */
 .opsGrid{
   display:grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 10px;
+  gap: 14px;
+  margin-top: 16px;
 }
 
-@media (max-width: 980px){
-  .opsGrid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1100px){
+  .opsGrid{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (max-width: 900px){
+  .opsGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 680px){
-  .opsHeader{ flex-direction:column; align-items:stretch; }
-  .opsControls{ min-width: unset; }
-  .opsTabs{ justify-content:flex-start; }
+  .opsGrid{ grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+}
+@media (max-width: 420px){
   .opsGrid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+/* ========== CARD ========== */
 .opCard{
-  position: relative;            /* ✅ para el overlay */
+  position: relative;
   text-align:left;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(17,24,39,0.55);
-  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: var(--card);
+  border-radius: var(--r);
   padding: 0;
   cursor:pointer;
   overflow:hidden;
-  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+  box-shadow: var(--shadow2);
+  transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
   transform-origin: center;
   will-change: transform;
+  isolation: isolate;
+
+  /* entry anim */
+  opacity: 0;
+  transform: translateY(10px);
+  animation: opIn 520ms cubic-bezier(.2,.9,.2,1) both;
 }
+
+@keyframes opIn{
+  from{ opacity: 0; transform: translateY(16px); filter: blur(2px); }
+  to{ opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* Si tu JS define --i, hará stagger. Si no, no pasa nada */
+.opCard{ animation-delay: calc((var(--i, 0)) * 18ms); }
 
 .opCard:hover{
-  transform: scale(1.05);
-  border-color: rgba(255,255,255,0.22);
+  transform: translateY(-3px) scale(1.02);
+  border-color: var(--stroke2);
   background: rgba(17,24,39,0.70);
+  box-shadow: 0 22px 70px rgba(0,0,0,.55);
 }
 
-.opCard:hover::after{
+/* halo suave por side */
+.opCard::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  opacity: 0;
+  transition: opacity .18s ease;
+  pointer-events:none;
+  background: radial-gradient(260px 160px at 30% 18%, rgba(245,199,106,.18), transparent 60%);
+  z-index: 0;
+}
+
+.opCard[data-side="attacker"]::before{
+  background: radial-gradient(260px 160px at 30% 18%, rgba(34,197,94,.20), transparent 60%);
+}
+.opCard[data-side="defender"]::before{
+  background: radial-gradient(260px 160px at 30% 18%, rgba(59,130,246,.20), transparent 60%);
+}
+.opCard:hover::before{ opacity: 1; }
+
+/* ========== IMAGE (encuadre perfecto) ========== */
+.opImageWrap{
+  position: relative;
+  width:100%;
+  aspect-ratio: 4 / 5;      /* ✅ consistente */
+  padding: 10px;            /* ✅ margen interno */
+  background: rgba(0,0,0,0.18);
+  z-index: 1;
+}
+
+.opImage{
+  width:100%;
+  height:130%;
+  border-radius: var(--r2);
+  object-fit: cover;
+  object-position: center 18%;   /* ✅ cara un poco arriba */
+  display:block;
+  filter: contrast(1.03) saturate(1.06);
+  transform: scale(1.0);
+  transition: transform .35s ease, filter .35s ease;
+}
+
+.opCard:hover .opImage{
+  transform: scale(1.05);
+  filter: contrast(1.06) saturate(1.10);
+}
+
+/* overlay de legibilidad (respeta padding) */
+.opImageWrap::after{
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: var(--r2);
+  pointer-events: none;
   opacity: 1;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.78) 0%,
+    rgba(0,0,0,0.25) 52%,
+    rgba(0,0,0,0.00) 78%
+  );
 }
 
+/* overlay rojo en hover (bonito, no agresivo) */
 .opCard::after{
   content:"";
   position:absolute;
@@ -129,219 +352,554 @@
   pointer-events:none;
   opacity:0;
   transition: opacity .18s ease;
-  /* ✅ rojo fuerte abajo, se desvanece hacia arriba */
   background: linear-gradient(
     to top,
-    rgba(220, 38, 38, 0.75) 0%,
-    rgba(220, 38, 38, 0.35) 35%,
+    rgba(220, 38, 38, 0.30) 0%,
+    rgba(220, 38, 38, 0.12) 35%,
     rgba(220, 38, 38, 0.00) 70%
   );
+  z-index: 0;
 }
+.opCard:hover::after{ opacity: 1; }
 
-.opImageWrap{
-  position: relative;
-  width:100%;
-  aspect-ratio: 6 / 10;
-  background: rgba(0,0,0,0.25);
-}
-
-.opImageWrap::after{
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .18s ease;
-
-  /* 🔥 Gradiente rojo: fuerte abajo, se desvanece arriba */
-  background: linear-gradient(
-    to top,
-    rgba(220, 38, 38, 0.85) 0%,
-    rgba(220, 38, 38, 0.45) 35%,
-    rgba(220, 38, 38, 0.00) 70%
-  );
-}
-
-.opCard:hover .opImageWrap::after{
-  opacity: 1;
-}
-
-.opImage{
-  width:100%;
-  height:100%;
-  object-fit: cover;
-  display:block;
-}
-
+/* ========== BADGE ========== */
 .opBadge{
   position:absolute;
-  top:10px;
-  left:10px;
-  font-size: 12px;
-  font-weight: 800;
+  top: 16px;
+  left: 16px;
+  z-index: 3;
+  font-size: 11px;
+  font-weight: 950;
   letter-spacing: .6px;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(0,0,0,0.35);
-  color:#fff;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
 }
 
 .opBadge.attacker{
-  border-color: rgba(34,197,94,0.30);
+  border-color: rgba(197, 34, 34, 0.35);
+  background: rgba(197, 34, 34, 0.14);
 }
 .opBadge.defender{
-  border-color: rgba(59,130,246,0.30);
+  border-color: rgba(59,130,246,0.35);
+  background: rgba(59,130,246,0.14);
 }
 
+/* ========== INFO (márgenes laterales + simetría) ========== */
 .opInfo{
+  padding: 12px 14px 14px;     /* ✅ margen left/right */
+  margin: 0;
   position: relative;
-  margin: 12px 12px 14px;
   z-index: 2;
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
 }
-
-.opImageWrap{
-  position: relative;
-  z-index: 1;
-}
-
 
 .opName{
-  font-size: 16px;
-  font-weight: 800;
-  margin-bottom: 8px;
-  color: #fff;
+  font-size: 15px;
+  font-weight: 950;
+  letter-spacing: .2px;
+  margin: 0;
+  color: var(--text);
+  text-align: center;          /* ✅ simetría */
 }
 
 .opMeta{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  opacity: .85;
-  font-size: 12.5px;
-  color: #fff;
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  color: rgba(255,255,255,0.90);
+  font-size: 11px;
+  text-align:center;
 }
 
-.opsBackBtn{
-  align-self: flex-start;
-  margin-bottom: 8px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(17,24,39,0.55);
-  color: #fff;
+.opMeta span{
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.22);
+  white-space: nowrap;
+}
+
+/* ========== MOBILE COMPACT ========== */
+@media (max-width: 680px){
+  .opImageWrap{ padding: 6px; aspect-ratio: 1 / 1; }
+  .opImageWrap::after{ inset: 6px; }
+  .opImage{ border-radius: 12px; object-position: center 16%; }
+  .opBadge{ top: 10px; left: 10px; font-size: 9px; padding: 4px 6px; }
+  .opInfo{ padding: 8px 8px 9px; gap: 6px; }
+  .opName{ font-size: 12px; }
+  .opMeta{ grid-template-columns: 1fr; gap: 4px; font-size: 10px; }
+  .opMeta span{ padding: 5px 7px; }
+  .opCard:hover{ transform: translateY(-2px) scale(1.01); }
+}
+
+/* ========== ACCESSIBILITY ========== */
+@media (prefers-reduced-motion: reduce){
+  .opCard{ animation: none !important; opacity: 1 !important; transform: none !important; filter: none !important; }
+  .opImage{ transition: none !important; }
+}
+
+/* (opcional) scrollbar más bonita en navegadores compatibles */
+*::-webkit-scrollbar{ width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,0.14);
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,0.35);
+}
+*::-webkit-scrollbar-thumb:hover{
+  background: rgba(255,255,255,0.20);
+}
+
+/* =========================
+   ROLES / TEXTO INFERIOR
+========================= */
+
+.rolesPage{
+  margin-top: 36px;
+  padding: 22px 20px 28px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.035);
+  box-shadow: 0 22px 70px rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  color: rgba(255,255,255,0.9);
+}
+
+/* títulos grandes */
+.rolesPage > h1{
+  margin: 0 0 18px;
+  font-size: 30px;
+  font-weight: 950;
+  letter-spacing: .25px;
+  text-align: center;
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 12px 30px rgba(0,0,0,0.55);
+}
+
+/* divisores */
+.sectionDivider{
+  height: 1px;
+  margin: 26px 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.22),
+    transparent
+  );
+}
+
+.sectionDividerLeft{
+  height: 1px;
+  margin: 18px 0 14px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.22),
+    transparent
+  );
+}
+
+/* =========================
+   BLOQUES DE ROL
+========================= */
+
+.rolesPage h2{
+  margin: 16px 0 6px;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: .2px;
+  color: rgba(245,199,106,0.95);
+}
+
+.rolesPage p{
+  margin: 0 0 12px;
+  max-width: 760px;
+  line-height: 1.55;
+  font-size: 14px;
+  color: rgba(255,255,255,0.78);
+}
+
+/* =========================
+   LISTAS DE OPERADORES
+========================= */
+
+.rolesPage ul{
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* chips */
+.rolesPage li{
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(17,24,39,0.65);
+  font-size: 13px;
   font-weight: 700;
-  cursor: pointer;
-  transition: transform .12s ease, background .12s ease, opacity .12s ease;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: .15px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
 }
 
-.opsBackBtn:hover{
-  transform: translateX(-2px);
-  background: rgba(17,24,39,0.75);
-  opacity: .95;
+.rolesPage li:hover{
+  transform: translateY(-1px);
+  background: rgba(17,24,39,0.85);
+  border-color: rgba(245,199,106,0.35);
 }
 
-.opsSortRow{
-  display:flex;
-  gap:8px;
-  align-items:center;
+/* =========================
+   VARIANTES POR TIPO
+========================= */
+
+/* Defensores */
+.rolesPage h1:contains("Defensores") ~ h2,
+.rolesPage h2:has(+ p){
+  scroll-margin-top: 20px;
+}
+
+/* si quieres diferenciarlos visualmente */
+.rolesPage h2:before{
+  content:"";
+  display:inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: rgba(245,199,106,0.9);
+  vertical-align: middle;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px){
+  .rolesPage{
+    padding: 18px 16px 22px;
+  }
+
+  .rolesPage > h1{
+    font-size: 26px;
+  }
+
+  .rolesPage h2{
+    font-size: 18px;
+  }
+
+  .rolesPage p{
+    font-size: 13.5px;
+  }
+
+  .rolesPage li{
+    font-size: 12.5px;
+    padding: 7px 11px;
+  }
+}
+
+@media (max-width: 520px){
+  .rolesPage{
+    padding: 16px 14px 20px;
+  }
+
+  .rolesPage ul{
+    gap: 8px;
+  }
+
+  .rolesPage li{
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+/* =========================
+   ANIMACIÓN DE ENTRADA
+========================= */
+
+.rolesPage > *{
+  opacity: 0;
+  transform: translateY(10px);
+  animation: rolesFadeIn .6s ease forwards;
+}
+
+.rolesPage > *:nth-child(1){ animation-delay: .05s; }
+.rolesPage > *:nth-child(2){ animation-delay: .10s; }
+.rolesPage > *:nth-child(3){ animation-delay: .15s; }
+.rolesPage > *:nth-child(4){ animation-delay: .20s; }
+.rolesPage > *:nth-child(5){ animation-delay: .25s; }
+
+@keyframes rolesFadeIn{
+  to{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce){
+  .rolesPage > *{
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* =========================
+   BOXES POR SECCIÓN (DEF/ATK/SPEC)
+   (añadir debajo, sin tocar lo demás)
+========================= */
+
+.rolesBox{
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background:
+    radial-gradient(800px 300px at 10% 0%, rgba(255,255,255,0.04), transparent 60%),
+    rgba(17,24,39,0.32);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+  padding: 18px 18px 16px;
+}
+
+/* separaciones entre boxes (ya usas sectionDivider, lo dejamos) */
+.rolesBox + .sectionDivider{
+  margin: 26px 0;
+}
+
+/* tintes suaves por tipo */
+.rolesBox--def{
+  background:
+    radial-gradient(700px 280px at 15% 0%, rgba(59,130,246,0.14), transparent 60%),
+    rgba(17,24,39,0.32);
+  border-color: rgba(59,130,246,0.18);
+}
+
+.rolesBox--atk{
+  background:
+    radial-gradient(700px 280px at 15% 0%, rgba(34,197,94,0.14), transparent 60%),
+    rgba(17,24,39,0.32);
+  border-color: rgba(34,197,94,0.18);
+}
+
+.rolesBox--spec{
+  background:
+    radial-gradient(700px 280px at 15% 0%, rgba(245,199,106,0.14), transparent 60%),
+    rgba(17,24,39,0.32);
+  border-color: rgba(245,199,106,0.18);
+}
+
+/* H1 dentro del box: que no quede tan “pegado” */
+.rolesBox > h1{
+  margin-bottom: 14px;
+}
+
+/* =========================
+   CONTROLES (clean + premium)
+========================= */
+
+.opsControls{
+  width: 100%;
+}
+
+.opsControlsCard{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+  backdrop-filter: blur(10px);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Search row */
+.opsSearchRow{
+  width: 100%;
+}
+
+.opsSearch{
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(17,24,39,0.72);
+  color: rgba(255,255,255,0.92);
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.opsSearch::placeholder{
+  color: rgba(255,255,255,0.55);
+}
+
+.opsSearch:focus{
+  border-color: rgba(245,199,106,0.45);
+  box-shadow: 0 0 0 4px rgba(245,199,106,0.12);
+  background: rgba(17,24,39,0.82);
+}
+
+/* Row: sort + segment */
+.opsControlsRow{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Sort group */
+.opsSortGroup{
+  display: grid;
+  grid-template-columns: 1fr 46px;
+  gap: 10px;
+  align-items: center;
+  min-width: 260px;
 }
 
 .opsSortSelect{
-  flex:1;
+  height: 42px;
   padding: 9px 12px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(17,24,39,0.55);
-  color: #fff;
+  background: rgba(17,24,39,0.62);
+  color: rgba(255,255,255,0.92);
   outline: none;
 }
 
 .opsSortDirBtn{
-  width: 40px;
-  height: 38px;
-  border-radius: 12px;
+  width: 46px;
+  height: 42px;
+  border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(17,24,39,0.55);
-  color:#fff;
-  font-weight: 900;
-  cursor:pointer;
-  transition: transform .12s ease, background .12s ease, opacity .12s ease;
+  background: rgba(17,24,39,0.62);
+  color: rgba(255,255,255,0.92);
+  font-weight: 950;
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
 }
 
 .opsSortDirBtn:hover{
   transform: translateY(-1px);
-  background: rgba(17,24,39,0.75);
-  opacity:.95;
+  background: rgba(17,24,39,0.78);
+  border-color: rgba(255,255,255,0.22);
+  opacity: .98;
 }
 
-/* Laptop / tablet grande */
-@media (max-width: 1100px){
-  .opsGrid{ grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* Segmented control (tabs) */
+.opsSegment{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(17,24,39,0.45);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 
-/* Tablet */
+.opsSegBtn{
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255,255,255,0.86);
+  font-weight: 900;
+  letter-spacing: .1px;
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease, color .12s ease;
+  white-space: nowrap;
+}
+
+.opsSegBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.10);
+}
+
+.opsSegBtn.isActive{
+  background: rgba(245,199,106,0.14);
+  border-color: rgba(245,199,106,0.45);
+  color: rgba(245,199,106,0.98);
+  box-shadow: 0 0 0 4px rgba(245,199,106,0.10);
+}
+
+/* Responsive */
 @media (max-width: 900px){
-  .opsGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
-/* Móvil: mínimo 4 columnas */
-@media (max-width: 680px){
-  .opsHeader{ flex-direction:column; align-items:stretch; }
-  .opsControls{ min-width: unset; }
-  .opsTabs{ justify-content:flex-start; }
-  .opsGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-}
-
-/* Móvil pequeño: seguimos con 4 pero más compacto */
-@media (max-width: 420px){
-  .opsGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-}
-
-/* Compacto para móviles */
-@media (max-width: 680px){
-  .opCard{
-    border-radius: 10px;
-  }
-
-  .opImageWrap{
-    aspect-ratio: 1 / 1; /* cuadradita para ahorrar altura */
-  }
-
-  .opBadge{
-    top: 6px;
-    left: 6px;
-    font-size: 9px;
-    padding: 3px 5px;
-  }
-
-  .opInfo{
-    margin: 6px 6px 7px;
-  }
-
-  .opName{
-    font-size: 12px;
-    margin-bottom: 4px;
-    line-height: 1.1;
-  }
-
-  /* En 4 columnas no caben 3 stats en fila: lo ponemos en columnas */
-  .opMeta{
-    display: grid;
+  .opsControlsRow{
     grid-template-columns: 1fr;
-    gap: 2px;
-    font-size: 10px;
-    opacity: .9;
   }
-
-  /* Hover más suave en móvil (y algunos móviles ni tienen hover) */
-  .opCard:hover{
-    transform: scale(1.02);
+  .opsSegment{
+    justify-content: center;
+    width: 100%;
   }
 }
 
-/* Móvil muy pequeño: aún más compacto */
-@media (max-width: 420px){
-  .opName{ font-size: 11px; }
-  .opMeta{ font-size: 9.5px; }
+@media (max-width: 520px){
+  .opsSortGroup{
+    grid-template-columns: 1fr 44px;
+  }
+  .opsSearch{ height: 42px; }
+  .opsSortSelect{ height: 40px; }
+  .opsSortDirBtn{ height: 40px; width: 44px; }
+  .opsSegBtn{ height: 36px; padding: 0 12px; font-size: 13px; }
+}
+
+/* ✅ FIX: que los controles NO se salgan del card */
+.opsControlsCard{
+  max-width: 560px;     /* el card no se hace gigante */
+  margin-left: auto;    /* se pega a la derecha en desktop */
+  width: 100%;
+}
+
+/* Antes era grid 1fr auto -> eso fuerza overflow.
+   Cambiamos a flex con wrap para que todo se acomode solo. */
+.opsControlsRow{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+/* Sort ocupa el espacio, pero puede bajar de línea si hace falta */
+.opsSortGroup{
+  flex: 1 1 280px;     /* crece, encoge y puede saltar */
+  min-width: 240px;
+}
+
+/* ✅ Segmented: permite wrap y nunca se sale */
+.opsSegment{
+  flex: 0 1 auto;
+  max-width: 100%;
+  display: flex;        /* en vez de inline-flex */
+  flex-wrap: wrap;      /* ✅ CLAVE */
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Los botones ya no fuerzan “una línea” eterna */
+.opsSegBtn{
+  white-space: normal;  /* o quítalo si lo tenías en nowrap */
+}
+
+/* En pantallas medianas/pequeñas, que el card vaya centrado */
+@media (max-width: 900px){
+  .opsControlsCard{
+    margin-left: 0;
+    max-width: 100%;
+  }
+
+  .opsSegment{
+    width: 100%;
+    justify-content: center;
+  }
 }
