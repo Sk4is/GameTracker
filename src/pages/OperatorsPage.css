@@ -289,7 +289,7 @@
 }
 
 .opCard[data-side="attacker"]::before{
-  background: radial-gradient(260px 160px at 30% 18%, rgba(34,197,94,.20), transparent 60%);
+  background: radial-gradient(260px 160px at 30% 18%, rgba(197, 34, 34, 0.2), transparent 60%);
 }
 .opCard[data-side="defender"]::before{
   background: radial-gradient(260px 160px at 30% 18%, rgba(59,130,246,.20), transparent 60%);
