@@ -21,7 +21,8 @@ export default function Home() {
         if (!r.ok) throw new Error(json?.error || `HTTP ${r.status}`);
         if (!cancel) setYt({ loading: false, error: "", video: json.video });
       } catch (e) {
-        if (!cancel) setYt({ loading: false, error: String(e.message || e), video: null });
+        if (!cancel)
+          setYt({ loading: false, error: String(e.message || e), video: null });
       }
     }
 
@@ -73,9 +74,13 @@ export default function Home() {
 
       {/* --- Último vídeo Ubisoft relacionado con R6 --- */}
       <div className="homeVideo">
-        <div className="homeVideo__title">Último vídeo de Ubisoft sobre Rainbow Six Siege</div>
+        <div className="homeVideo__title">
+          Último vídeo de Ubisoft sobre Rainbow Six Siege
+        </div>
 
-        {yt.loading ? <div className="homeVideo__hint">Cargando vídeo…</div> : null}
+        {yt.loading ? (
+          <div className="homeVideo__hint">Cargando vídeo…</div>
+        ) : null}
 
         {yt.error ? (
           <div className="homeVideo__error">
@@ -86,7 +91,7 @@ export default function Home() {
         {yt.video ? (
           <div className="homeVideo__card">
             <iframe
-              src={`https://www.youtube.com/embed/${yt.video.videoId}?autoplay=1&mute=1&loop=1&playlist=${yt.video.videoId}&controls=1&rel=0`}
+              src={`https://www.youtube.com/embed/${yt.video.videoId}?mute=1&loop=1&playlist=${yt.video.videoId}&controls=1&rel=0`}
               title={yt.video.title}
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -96,7 +101,8 @@ export default function Home() {
               <div className="homeVideo__videoTitle">{yt.video.title}</div>
               {yt.video.published ? (
                 <div className="homeVideo__date">
-                  Publicado: {new Date(yt.video.published).toLocaleDateString("es-ES")}
+                  Publicado:{" "}
+                  {new Date(yt.video.published).toLocaleDateString("es-ES")}
                 </div>
               ) : null}
             </div>
