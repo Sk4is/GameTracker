@@ -229,6 +229,8 @@ app.get("/api/player/:platform/:name", async (req, res) => {
           matches: "-",
           wins: "-",
           losses: "-",
+          kills: "-",
+          deaths: "-",
           peakRank: "-",
           peakMmr: "-",
         },
@@ -238,8 +240,11 @@ app.get("/api/player/:platform/:name", async (req, res) => {
           losses: "-",
           kd: "-",
           winRate: "-",
+          kills: "-",
+          deaths: "-",
         },
-        // ✅ ya NO mandamos rankedSeasons
+
+        rankedSeasons: [],
       },
     },
   };
@@ -415,6 +420,53 @@ app.get("/api/player/:platform/:name", async (req, res) => {
     const standardBoard =
       findBoard("standard") || findBoard("living_game_mode");
 
+    // ---------- Ranked seasons (histórico) ----------
+    const rankedFps = Array.isArray(rankedBoard?.full_profiles)
+      ? rankedBoard.full_profiles
+      : [];
+
+    const rankedSeasons = rankedFps
+      .map((fp, i) => {
+        const profS = fp?.profile || {};
+        const stS = fp?.season_statistics || {};
+
+        // Intentamos sacar algún identificador de temporada si existe:
+        const season =
+          fp?.seasonYear ??
+          fp?.season_year ??
+          fp?.season ??
+          fp?.season_id ??
+          fp?.seasonId ??
+          fp?.metadata?.season ??
+          `#${i + 1}`;
+
+        const peakRankIdS = Number(profS?.max_rank ?? 0);
+        const peakMmrS = profS?.max_rank_points ?? "-";
+
+        const finalRankIdS = Number(profS?.rank ?? 0);
+        const finalMmrS = profS?.rank_points ?? "-";
+
+        const winsS = Number(stS?.match_outcomes?.wins ?? 0);
+        const lossesS = Number(stS?.match_outcomes?.losses ?? 0);
+        const abandonsS = Number(stS?.match_outcomes?.abandons ?? 0);
+        const matchesS = winsS + lossesS + abandonsS;
+
+        return {
+          season,
+          matches: matchesS,
+          wins: winsS,
+          losses: lossesS,
+          // peak de ESA temporada
+          peakRank: rankNameFromId(peakRankIdS),
+          peakMmr: peakMmrS,
+          // (opcional) “final”/snapshot de esa temporada
+          rank: rankNameFromId(finalRankIdS),
+          mmr: finalMmrS,
+        };
+      })
+      // quita temporadas sin partidas (opcional)
+      .filter((s) => (s?.matches ?? 0) > 0);
+
     // ---------- Ranked “temporada actual” ----------
     const rankedFp0 = Array.isArray(rankedBoard?.full_profiles)
       ? rankedBoard.full_profiles[0]
@@ -488,6 +540,8 @@ app.get("/api/player/:platform/:name", async (req, res) => {
           matches,
           wins,
           losses,
+          kills,
+          deaths,
           peakRank: peakRankName,
           peakMmr,
         },
@@ -497,7 +551,11 @@ app.get("/api/player/:platform/:name", async (req, res) => {
           losses: unLosses,
           kd: unKd,
           winRate: unWinRate,
+          kills: unKills,
+          deaths: unDeaths,
         },
+
+        rankedSeasons,
       },
     };
 
