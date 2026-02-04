@@ -60,6 +60,56 @@ function rankColor(rank) {
   return "#999";
 }
 
+function toRoman(n) {
+  return ["I", "II", "III", "IV", "V"][n - 1] ?? "";
+}
+
+function romanToNumber(roman) {
+  const map = { I: 1, II: 2, III: 3, IV: 4, V: 5 };
+  return map[roman] ?? null;
+}
+
+function getRankIconPath(rank) {
+  if (!rank || rank === "-") return null;
+
+  // Campeón (sin número)
+  if (rank === "Campeón" || rank === "Campeon") {
+    return "/assets/ranks/campeon.png";
+  }
+
+  // Ej: "Oro II" => base="oro", roman="II" => num=2 => "oro-2.png"
+  const [tierRaw, romanRaw] = String(rank).trim().split(/\s+/);
+  const num = romanToNumber(romanRaw);
+
+  if (!tierRaw || !num) return null;
+
+  const tier = tierRaw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // quita acentos: "Campeón" -> "campeon"
+
+  return `/assets/ranks/${tier}-${num}.png`;
+}
+
+function RankWithIcon({ rank, size = 18 }) {
+  const src = getRankIconPath(rank);
+
+  return (
+    <span className="rankInline">
+      {src ? (
+        <img
+          className="rankInline__icon"
+          src={src}
+          alt={rank}
+          style={{ width: size, height: size }}
+          loading="lazy"
+        />
+      ) : null}
+      <span className="rankInline__text">{rank ?? "-"}</span>
+    </span>
+  );
+}
+
 function StatCard({ label, value, accent = "rgba(245,199,106,0.9)" }) {
   return (
     <div className="statCard" style={{ "--accent": accent }}>
@@ -192,7 +242,9 @@ export default function PlayerPage() {
           <div className="banner__meta">
             Plataforma: <b>{platform}</b>{" "}
             {state.payload?.mock ? (
-              <span className="banner__mock">(mock)</span>
+              <span className="banner__mock">
+                (No se ha encontrado al jugador)
+              </span>
             ) : null}
           </div>
 
@@ -224,80 +276,97 @@ export default function PlayerPage() {
       </div>
 
       {tab === "ranked" ? (
-  <div key={`ranked-${d?.username ?? decodedName}`}>
-    {/* Peak */}
-    <div
-      className="peak"
-      style={{
-        "--accent": peakClr,
-        borderColor: peakClr,
-        boxShadow: `0 0 0 1px ${peakClr}, 0 0 24px ${peakClr}55`,
-      }}
-    >
-      <div className="peak__label">Rango máximo histórico (Peak)</div>
-      <div className="peak__value">{peakValue}</div>
-      <div className="peak__meta2">MMR: {peakMmr}</div>
-    </div>
+        <div key={`ranked-${d?.username ?? decodedName}`}>
+          {/* Peak */}
+          <div
+            className="peak"
+            style={{
+              "--accent": peakClr,
+              borderColor: peakClr,
+              boxShadow: `0 0 0 1px ${peakClr}, 0 0 24px ${peakClr}55`,
+            }}
+          >
+            <div className="peak__label">Rango máximo histórico (Peak)</div>
+            <div className="peak__value">
+              <RankWithIcon rank={peakValue} size={75} />
+            </div>
 
-    {/* ✅ key también en el grid para asegurar animación */}
-    <div className="statsGrid" key={`ranked-grid-${ranked?.currentRank ?? ""}-${ranked?.mmr ?? ""}`}>
-      <StatCard
-        label="Rango actual"
-        value={ranked?.currentRank ?? "-"}
-        accent={rankColor(ranked?.currentRank ?? "")}
-      />
-      <StatCard
-        label="MMR"
-        value={ranked?.mmr ?? "-"}
-        accent="rgba(69,205,193,0.95)"
-      />
-      <StatCard
-        label="K/D"
-        value={ranked?.kd ?? "-"}
-        accent="rgba(180,149,249,0.95)"
-      />
-      <StatCard
-        label="Winrate"
-        value={ranked?.winRate != null ? `${ranked.winRate}%` : "-"}
-        accent="rgba(8,206,125,0.95)"
-      />
-      <StatCard
-        label="Kills"
-        value={ranked?.kills ?? "-"}
-        accent="rgba(223,24,128,0.95)"
-      />
-      <StatCard
-        label="Muertes"
-        value={ranked?.deaths ?? "-"}
-        accent="rgba(255,100,100,0.95)"
-      />
-    </div>
-  </div>
-) : (
-  <div key={`unranked-${d?.username ?? decodedName}`}>
-    <div className="statsGrid" key={`unranked-grid-1-${unranked?.matches ?? ""}`}>
-      <StatCard label="Partidas" value={unranked?.matches ?? "-"} />
-      <StatCard label="Victorias" value={unranked?.wins ?? "-"} />
-      <StatCard label="Derrotas" value={unranked?.losses ?? "-"} />
-      <StatCard label="K/D" value={unranked?.kd ?? "-"} />
-    </div>
+            <div className="peak__meta2">MMR: {peakMmr}</div>
+          </div>
 
-    {/* ✅ aquí es donde te fallaba: forzamos remount */}
-    <div className="statsGrid statsGrid--2" key={`unranked-kd-${unranked?.kills ?? ""}-${unranked?.deaths ?? ""}`}>
-      <StatCard label="Kills" value={unranked?.kills ?? "-"} />
-      <StatCard label="Muertes" value={unranked?.deaths ?? "-"} />
-    </div>
+          {/* ✅ key también en el grid para asegurar animación */}
+          <div
+            className="statsGrid"
+            key={`ranked-grid-${ranked?.currentRank ?? ""}-${ranked?.mmr ?? ""}`}
+          >
+            <StatCard
+              label="Rango actual"
+              value={
+                <RankWithIcon rank={ranked?.currentRank ?? "-"} size={35} />
+              }
+              accent={rankColor(ranked?.currentRank ?? "")}
+            />
 
-    <div className="statsGrid statsGrid--2" key={`unranked-grid-3-${unranked?.winRate ?? ""}`}>
-      <StatCard
-        label="Winrate"
-        value={unranked?.winRate != null ? `${unranked.winRate}%` : "-"}
-      />
-      <StatCard label="Modo" value="Unranked" />
-    </div>
-  </div>
-)}
+            <StatCard
+              label="MMR"
+              value={ranked?.mmr ?? "-"}
+              accent="rgba(69,205,193,0.95)"
+            />
+            <StatCard
+              label="K/D"
+              value={ranked?.kd ?? "-"}
+              accent="rgba(180,149,249,0.95)"
+            />
+            <StatCard
+              label="Winrate"
+              value={ranked?.winRate != null ? `${ranked.winRate}%` : "-"}
+              accent="rgba(8,206,125,0.95)"
+            />
+            <StatCard
+              label="Kills"
+              value={ranked?.kills ?? "-"}
+              accent="rgba(223,24,128,0.95)"
+            />
+            <StatCard
+              label="Muertes"
+              value={ranked?.deaths ?? "-"}
+              accent="rgba(255,100,100,0.95)"
+            />
+          </div>
+        </div>
+      ) : (
+        <div key={`unranked-${d?.username ?? decodedName}`}>
+          <div
+            className="statsGrid"
+            key={`unranked-grid-1-${unranked?.matches ?? ""}`}
+          >
+            <StatCard label="Partidas" value={unranked?.matches ?? "-"} />
+            <StatCard label="Victorias" value={unranked?.wins ?? "-"} />
+            <StatCard label="Derrotas" value={unranked?.losses ?? "-"} />
+            <StatCard label="K/D" value={unranked?.kd ?? "-"} />
+          </div>
 
+          {/* ✅ aquí es donde te fallaba: forzamos remount */}
+          <div
+            className="statsGrid statsGrid--2"
+            key={`unranked-kd-${unranked?.kills ?? ""}-${unranked?.deaths ?? ""}`}
+          >
+            <StatCard label="Kills" value={unranked?.kills ?? "-"} />
+            <StatCard label="Muertes" value={unranked?.deaths ?? "-"} />
+          </div>
+
+          <div
+            className="statsGrid statsGrid--2"
+            key={`unranked-grid-3-${unranked?.winRate ?? ""}`}
+          >
+            <StatCard
+              label="Winrate"
+              value={unranked?.winRate != null ? `${unranked.winRate}%` : "-"}
+            />
+            <StatCard label="Modo" value="Unranked" />
+          </div>
+        </div>
+      )}
 
       {/* Tabla operadores */}
       <div className="tableCard">
@@ -342,7 +411,9 @@ export default function PlayerPage() {
       </div>
 
       <div className="tip">
-        Aviso: No intentes buscar muchas veces seguidas un mismo perfil, ya que la request podría saturarse y no mostrar los datos de este perfil durante un corto periodo de tiempo.
+        Aviso: No intentes buscar muchas veces seguidas un mismo perfil, ya que
+        la request podría saturarse y no mostrar los datos de este perfil
+        durante un corto periodo de tiempo.
       </div>
     </div>
   );
